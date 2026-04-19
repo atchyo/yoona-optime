@@ -1,32 +1,51 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ReactElement, ReactNode } from "react";
-import { analyzeIngredients, assistantReply, buildEmptyAnalysis, summarizeFindings } from "./analysis";
-import { demoUsers, interactionRules, profiles, reportStatuses } from "./data/demoData";
+import type { ReactElement } from "react";
+import { AppShell } from "./components/AppShell";
+import type { Route } from "./components/AppShell";
+import {
+  careProfiles as seedCareProfiles,
+  familyMembers as seedFamilyMembers,
+  medicationSchedules,
+  medications as seedMedications,
+} from "./data/demoData";
+import { DashboardPage } from "./pages/DashboardPage";
+import { FamilyAdminPage } from "./pages/FamilyAdminPage";
+import { LoginPage } from "./pages/LoginPage";
+import { MedicationScanPage } from "./pages/MedicationScanPage";
+import { ProfilesPage } from "./pages/ProfilesPage";
+import { RemindersPage } from "./pages/RemindersPage";
+import { RuleChatPage } from "./pages/RuleChatPage";
+import { ServiceAdminPage } from "./pages/ServiceAdminPage";
+import { signOutSupabase, supabase } from "./services/supabaseClient";
 import {
   clearUser,
+  loadCareProfiles,
   loadCurrentProfileId,
+  loadFamilyMembers,
+  loadMedications,
+  loadScans,
+  loadTemporaryMedications,
   loadTheme,
   loadUser,
+  saveCareProfiles,
   saveCurrentProfileId,
+  saveFamilyMembers,
+  saveMedications,
+  saveScans,
+  saveTemporaryMedications,
   saveTheme,
   saveUser,
 } from "./storage";
-import type { AnalysisResult, DemoUser, Profile, ThemeMode } from "./types";
-
-type Route = "/" | "/login" | "/profiles" | "/report" | "/admin";
-
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-}
-
-const navItems: Array<{ path: Route; label: string; adminOnly?: boolean }> = [
-  { path: "/", label: "대시보드" },
-  { path: "/profiles", label: "가족" },
-  { path: "/report", label: "리포트" },
-  { path: "/admin", label: "Admin", adminOnly: true },
-];
+import type {
+  CareProfile,
+  DemoUser,
+  FamilyMember,
+  Medication,
+  MedicationLog,
+  OcrScan,
+  TemporaryMedication,
+  ThemeMode,
+} from "./types";
 
 const basePath = "/yoona-app";
 
@@ -34,19 +53,77 @@ export function App(): ReactElement {
   const [theme, setTheme] = useState<ThemeMode>(() => loadTheme());
   const [user, setUser] = useState<DemoUser | null>(() => loadUser());
   const [route, setRoute] = useState<Route>(() => getInitialRoute());
-  const [currentProfileId, setCurrentProfileId] = useState(() =>
-    loadCurrentProfileId(profiles[0].id),
+  const [careProfileList, setCareProfileList] = useState<CareProfile[]>(() =>
+    migrateDemoCareProfiles(loadCareProfiles(seedCareProfiles)),
   );
+  const [currentProfileId, setCurrentProfileId] = useState(() =>
+    loadCurrentProfileId(seedCareProfiles[0].id),
+  );
+  const [medications, setMedications] = useState<Medication[]>(() =>
+    loadMedications(seedMedications),
+  );
+  const [temporaryMedications, setTemporaryMedications] = useState<TemporaryMedication[]>(() =>
+    loadTemporaryMedications([]),
+  );
+  const [scans, setScans] = useState<OcrScan[]>(() => loadScans([]));
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(() =>
+    migrateDemoFamilyMembers(loadFamilyMembers(seedFamilyMembers)),
+  );
+  const [logs, setLogs] = useState<MedicationLog[]>([]);
 
   const currentProfile = useMemo(
-    () => profiles.find((profile) => profile.id === currentProfileId) || profiles[0],
-    [currentProfileId],
+    () =>
+      careProfileList.find((profile) => profile.id === currentProfileId) ||
+      careProfileList[0] ||
+      seedCareProfiles[0],
+    [careProfileList, currentProfileId],
   );
+  const displayCareProfiles = useMemo(
+    () => careProfileList.map((profile) => displayProfileForUser(profile, user, familyMembers)),
+    [careProfileList, familyMembers, user],
+  );
+  const registrationCareProfiles = useMemo(
+    () => profilesAvailableForMedicationRegistration(careProfileList, user).map((profile) =>
+      displayProfileForUser(profile, user, familyMembers),
+    ),
+    [careProfileList, familyMembers, user],
+  );
+  const displayCurrentProfile = useMemo(
+    () => displayProfileForUser(currentProfile, user, familyMembers),
+    [currentProfile, familyMembers, user],
+  );
+  const loggedInUserProfile = useMemo(() => {
+    const selfProfile =
+      careProfileList.find((profile) => profile.ownerUserId === user?.id) ||
+      careProfileList.find((profile) => profile.type === "self") ||
+      currentProfile;
+    return displayProfileForUser(selfProfile, user, familyMembers);
+  }, [careProfileList, currentProfile, familyMembers, user]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     saveTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    saveMedications(medications);
+  }, [medications]);
+
+  useEffect(() => {
+    saveCareProfiles(careProfileList);
+  }, [careProfileList]);
+
+  useEffect(() => {
+    saveTemporaryMedications(temporaryMedications);
+  }, [temporaryMedications]);
+
+  useEffect(() => {
+    saveScans(scans);
+  }, [scans]);
+
+  useEffect(() => {
+    saveFamilyMembers(familyMembers);
+  }, [familyMembers]);
 
   useEffect(() => {
     const onPopState = (): void => setRoute(getRouteFromLocation());
@@ -55,12 +132,47 @@ export function App(): ReactElement {
   }, []);
 
   useEffect(() => {
+    if (!supabase) return;
+
+    async function syncSupabaseSession(): Promise<void> {
+      if (!supabase) return;
+      const { data } = await supabase.auth.getSession();
+      if (!data.session?.user) return;
+      const nextUser = mapSupabaseUser(data.session.user);
+      saveUser(nextUser);
+      setUser(nextUser);
+      if (user?.id !== nextUser.id) selectDefaultProfileForUser(nextUser);
+    }
+
+    void syncSupabaseSession();
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) return;
+      const nextUser = mapSupabaseUser(session.user);
+      saveUser(nextUser);
+      setUser(nextUser);
+      if (user?.id !== nextUser.id) selectDefaultProfileForUser(nextUser);
+      if (route === "/login") {
+        pushRoute("/");
+        setRoute("/");
+      }
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, [route]);
+
+  useEffect(() => {
     if (!user && route !== "/login") {
       setRoute("/login");
       replaceRoute("/login");
     }
 
-    if (user?.role !== "admin" && route === "/admin") {
+    if (user?.role !== "admin" && route === "/service-admin") {
+      setRoute("/");
+      replaceRoute("/");
+    }
+
+    if (user && user.familyRole === "member" && route === "/family") {
       setRoute("/");
       replaceRoute("/");
     }
@@ -73,7 +185,13 @@ export function App(): ReactElement {
       return;
     }
 
-    if (nextRoute === "/admin" && user?.role !== "admin") {
+    if (nextRoute === "/service-admin" && user?.role !== "admin") {
+      pushRoute("/");
+      setRoute("/");
+      return;
+    }
+
+    if (nextRoute === "/family" && user?.familyRole === "member") {
       pushRoute("/");
       setRoute("/");
       return;
@@ -83,14 +201,16 @@ export function App(): ReactElement {
     setRoute(nextRoute);
   }
 
-  function handleLogin(nextUser: DemoUser): void {
+  function handleDemoLogin(nextUser: DemoUser): void {
     saveUser(nextUser);
     setUser(nextUser);
+    selectDefaultProfileForUser(nextUser);
     pushRoute("/");
     setRoute("/");
   }
 
-  function handleLogout(): void {
+  async function handleLogout(): Promise<void> {
+    await signOutSupabase();
     clearUser();
     setUser(null);
     navigate("/login");
@@ -101,10 +221,90 @@ export function App(): ReactElement {
     setCurrentProfileId(profileId);
   }
 
-  const shell = (
+  function selectDefaultProfileForUser(nextUser: DemoUser): void {
+    const nextProfileId = defaultProfileIdForUser(careProfileList, nextUser, "");
+    saveCurrentProfileId(nextProfileId);
+    setCurrentProfileId(nextProfileId);
+  }
+
+  function handleConfirmMedication(medication: Medication, scan: OcrScan): void {
+    setMedications((current) => [medication, ...current]);
+    setScans((current) => [scan, ...current]);
+    handleProfileChange(medication.careProfileId);
+  }
+
+  function handleCreateTemporaryMedication(
+    medication: TemporaryMedication,
+    scan: OcrScan,
+  ): void {
+    setTemporaryMedications((current) => [medication, ...current]);
+    setScans((current) => [scan, ...current]);
+    handleProfileChange(medication.careProfileId);
+  }
+
+  function handleMarkTaken(scheduleId: string): void {
+    const schedule = medicationSchedules.find((item) => item.id === scheduleId);
+    if (!schedule) return;
+
+    setLogs((current) => [
+      {
+        id: crypto.randomUUID(),
+        medicationId: schedule.medicationId,
+        scheduleId: schedule.id,
+        takenAt: new Date().toISOString(),
+      },
+      ...current,
+    ]);
+  }
+
+  function handleUpdateFamilyMember(memberId: string, patch: Partial<FamilyMember>): void {
+    setFamilyMembers((current) =>
+      current.map((member) => (member.id === memberId ? { ...member, ...patch } : member)),
+    );
+  }
+
+  function handleAddCareProfile(profile: CareProfile): void {
+    setCareProfileList((current) => [profile, ...current]);
+    handleProfileChange(profile.id);
+  }
+
+  function handleUpdateCareProfile(profileId: string, patch: Partial<CareProfile>): void {
+    setCareProfileList((current) =>
+      current.map((profile) => (profile.id === profileId ? { ...profile, ...patch } : profile)),
+    );
+  }
+
+  function handleDeleteCareProfile(profileId: string): void {
+    const targetProfile = careProfileList.find((profile) => profile.id === profileId);
+    if (!targetProfile || targetProfile.type !== "pet") return;
+
+    setCareProfileList((current) => current.filter((profile) => profile.id !== profileId));
+    setMedications((current) => current.filter((medication) => medication.careProfileId !== profileId));
+    setTemporaryMedications((current) =>
+      current.filter((medication) => medication.careProfileId !== profileId),
+    );
+    setScans((current) => current.filter((scan) => scan.careProfileId !== profileId));
+
+    if (currentProfileId === profileId) {
+      const nextProfileId = defaultProfileIdForUser(careProfileList, user, profileId);
+      handleProfileChange(nextProfileId);
+    }
+  }
+
+  if (!user || route === "/login") {
+    return (
+      <LoginPage
+        onDemoLogin={handleDemoLogin}
+        onThemeToggle={() => setTheme(theme === "light" ? "dark" : "light")}
+        theme={theme}
+      />
+    );
+  }
+
+  return (
     <AppShell
-      currentProfile={currentProfile}
-      onLogout={handleLogout}
+      currentProfile={displayCurrentProfile}
+      onLogout={() => void handleLogout()}
       onNavigate={navigate}
       onThemeToggle={() => setTheme(theme === "light" ? "dark" : "light")}
       route={route}
@@ -113,539 +313,62 @@ export function App(): ReactElement {
     >
       {route === "/" && (
         <DashboardPage
-          currentProfile={currentProfile}
-          onProfileChange={handleProfileChange}
+          currentProfile={loggedInUserProfile}
+          medications={medications}
+          onNavigateScan={() => navigate("/scan")}
+          scans={scans}
+          schedules={medicationSchedules}
+        />
+      )}
+      {route === "/scan" && (
+        <MedicationScanPage
+          careProfiles={registrationCareProfiles}
+          currentProfile={displayCurrentProfile}
+          onConfirmMedication={handleConfirmMedication}
+          onCreateTemporaryMedication={handleCreateTemporaryMedication}
         />
       )}
       {route === "/profiles" && (
         <ProfilesPage
+          careProfiles={displayCareProfiles}
           currentProfileId={currentProfile.id}
+          familyMembers={familyMembers}
+          medications={medications}
           onProfileChange={handleProfileChange}
+          schedules={medicationSchedules}
+          temporaryMedications={temporaryMedications}
         />
       )}
-      {route === "/report" && <ReportPage currentProfile={currentProfile} />}
-      {route === "/admin" && user?.role === "admin" && <AdminPage />}
+      {route === "/reminders" && (
+        <RemindersPage
+          currentProfile={loggedInUserProfile}
+          medications={medications}
+          onMarkTaken={handleMarkTaken}
+          schedules={medicationSchedules}
+        />
+      )}
+      {route === "/chat" && (
+        <RuleChatPage currentProfile={loggedInUserProfile} medications={medications} />
+      )}
+      {route === "/family" && (
+        <FamilyAdminPage
+          careProfiles={careProfileList}
+          familyMembers={familyMembers}
+          medications={medications}
+          onAddCareProfile={handleAddCareProfile}
+          onDeleteCareProfile={handleDeleteCareProfile}
+          onUpdateCareProfile={handleUpdateCareProfile}
+          onUpdateMember={handleUpdateFamilyMember}
+          scans={scans}
+          temporaryMedications={temporaryMedications}
+          user={user}
+        />
+      )}
+      {route === "/service-admin" && user.role === "admin" && <ServiceAdminPage />}
+      {logs.length > 0 && (
+        <p className="sr-only">최근 복용 완료 기록 {logs.length}건</p>
+      )}
     </AppShell>
-  );
-
-  return route === "/login" || !user ? (
-    <LoginPage
-      onLogin={handleLogin}
-      onThemeToggle={() => setTheme(theme === "light" ? "dark" : "light")}
-      theme={theme}
-    />
-  ) : (
-    shell
-  );
-}
-
-interface AppShellProps {
-  children: ReactNode;
-  currentProfile: Profile;
-  onLogout: () => void;
-  onNavigate: (route: Route) => void;
-  onThemeToggle: () => void;
-  route: Route;
-  theme: ThemeMode;
-  user: DemoUser | null;
-}
-
-function AppShell({
-  children,
-  currentProfile,
-  onLogout,
-  onNavigate,
-  onThemeToggle,
-  route,
-  theme,
-  user,
-}: AppShellProps): ReactElement {
-  return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand-block">
-          <span className="brand-mark">O</span>
-          <div>
-            <strong>Opti-Me</strong>
-            <span>AI 복용비서</span>
-          </div>
-        </div>
-        <nav aria-label="주요 메뉴" className="nav-list">
-          {navItems
-            .filter((item) => !item.adminOnly || user?.role === "admin")
-            .map((item) => (
-              <button
-                aria-current={route === item.path ? "page" : undefined}
-                className={route === item.path ? "nav-item active" : "nav-item"}
-                key={item.path}
-                onClick={() => onNavigate(item.path)}
-                type="button"
-              >
-                {item.label}
-              </button>
-            ))}
-        </nav>
-        <div className="sidebar-card">
-          <span>현재 프로필</span>
-          <strong>{currentProfile.name}</strong>
-          <p>{currentProfile.type === "pet" ? "반려동물" : "가족"} 복용 상태 확인 중</p>
-        </div>
-      </aside>
-
-      <div className="content-shell">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Demo MVP</p>
-            <h1>안전한 복용 루틴을 한 곳에서</h1>
-          </div>
-          <div className="topbar-actions">
-            <ThemeToggle onToggle={onThemeToggle} theme={theme} />
-            <div className="user-chip" aria-label="로그인 사용자">
-              <span>{user?.name.slice(0, 1)}</span>
-              <strong>{user?.name}</strong>
-            </div>
-            <button className="ghost-button" onClick={onLogout} type="button">
-              로그아웃
-            </button>
-          </div>
-        </header>
-
-        <main className="page-content">{children}</main>
-      </div>
-
-      <nav aria-label="모바일 메뉴" className="mobile-tabbar">
-        {navItems
-          .filter((item) => !item.adminOnly || user?.role === "admin")
-          .map((item) => (
-            <button
-              aria-current={route === item.path ? "page" : undefined}
-              className={route === item.path ? "mobile-tab active" : "mobile-tab"}
-              key={item.path}
-              onClick={() => onNavigate(item.path)}
-              type="button"
-            >
-              {item.label}
-            </button>
-          ))}
-      </nav>
-    </div>
-  );
-}
-
-interface LoginPageProps {
-  onLogin: (user: DemoUser) => void;
-  onThemeToggle: () => void;
-  theme: ThemeMode;
-}
-
-function LoginPage({ onLogin, onThemeToggle, theme }: LoginPageProps): ReactElement {
-  return (
-    <main className="login-page">
-      <section className="login-visual" aria-label="Opti-Me 소개">
-        <div className="login-copy">
-          <p className="eyebrow">Opti-Me MVP</p>
-          <h1>가족의 약과 영양제 루틴을 더 선명하게.</h1>
-          <p>
-            AI 스캔, 병용 주의, 가족·펫 프로필, 의료 리포트를 하나의 웹앱
-            구조로 연결합니다.
-          </p>
-        </div>
-        <img
-          alt="의약품을 정리하는 모습"
-          className="login-image"
-          src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=900&q=80"
-        />
-      </section>
-      <section className="login-card" aria-labelledby="login-title">
-        <div className="login-card-head">
-          <span className="brand-mark">O</span>
-          <ThemeToggle onToggle={onThemeToggle} theme={theme} />
-        </div>
-        <p className="eyebrow">데모 로그인</p>
-        <h2 id="login-title">역할을 선택해 시작하세요</h2>
-        <p className="muted">
-          실제 계정 연동 전까지 GitHub Pages에서 바로 확인할 수 있는 데모
-          로그인입니다.
-        </p>
-        <div className="login-actions">
-          {demoUsers.map((demoUser) => (
-            <button
-              className="primary-button"
-              key={demoUser.id}
-              onClick={() => onLogin(demoUser)}
-              type="button"
-            >
-              {demoUser.role === "admin" ? "관리자로 시작" : "사용자로 시작"}
-            </button>
-          ))}
-        </div>
-      </section>
-    </main>
-  );
-}
-
-interface DashboardPageProps {
-  currentProfile: Profile;
-  onProfileChange: (profileId: string) => void;
-}
-
-function DashboardPage({
-  currentProfile,
-  onProfileChange,
-}: DashboardPageProps): ReactElement {
-  const [ingredientInput, setIngredientInput] = useState(currentProfile.meds.join(", "));
-  const [analysis, setAnalysis] = useState<AnalysisResult>(() =>
-    buildEmptyAnalysis(currentProfile),
-  );
-  const [chatInput, setChatInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      text: "성분을 입력하면 복용 안전도를 분석해드릴게요.",
-    },
-  ]);
-
-  useEffect(() => {
-    const nextInput = currentProfile.meds.join(", ");
-    setIngredientInput(nextInput);
-    setAnalysis(analyzeIngredients(nextInput, currentProfile));
-  }, [currentProfile]);
-
-  function handleAnalyze(): void {
-    setAnalysis(analyzeIngredients(ingredientInput, currentProfile));
-  }
-
-  function handleSend(): void {
-    const trimmed = chatInput.trim();
-    if (!trimmed) return;
-
-    const reply = assistantReply(trimmed, currentProfile);
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { id: crypto.randomUUID(), role: "user", text: trimmed },
-      { id: crypto.randomUUID(), role: "assistant", text: reply },
-    ]);
-    setChatInput("");
-  }
-
-  return (
-    <div className="dashboard-layout">
-      <section className="workspace-column">
-        <div className="profile-strip card">
-          {profiles.map((profile) => (
-            <button
-              className={profile.id === currentProfile.id ? "profile-pill active" : "profile-pill"}
-              key={profile.id}
-              onClick={() => onProfileChange(profile.id)}
-              type="button"
-            >
-              <span>{profile.name}</span>
-              <small>{profile.type === "pet" ? "펫" : `${profile.ageGroup}+`}</small>
-            </button>
-          ))}
-        </div>
-
-        <section className="analysis-card card" aria-labelledby="analysis-title">
-          <div className="section-heading">
-            <p className="eyebrow">AI Scan</p>
-            <h2 id="analysis-title">성분 분석</h2>
-          </div>
-          <label htmlFor="ingredient-input">성분 입력</label>
-          <textarea
-            id="ingredient-input"
-            onChange={(event) => setIngredientInput(event.target.value)}
-            placeholder="예시: 비타민C 1000mg, 칼슘 500mg, 철분 18mg"
-            rows={5}
-            value={ingredientInput}
-          />
-          <button className="primary-button" onClick={handleAnalyze} type="button">
-            성분 분석하기
-          </button>
-          <AnalysisSummary analysis={analysis} />
-        </section>
-      </section>
-
-      <aside className="support-column">
-        <TimelinePanel timeline={analysis.timeline} />
-        <ChatPanel
-          chatInput={chatInput}
-          messages={messages}
-          onChatInputChange={setChatInput}
-          onSend={handleSend}
-        />
-        <ReportSnapshot analysis={analysis} currentProfile={currentProfile} />
-      </aside>
-    </div>
-  );
-}
-
-function AnalysisSummary({ analysis }: { analysis: AnalysisResult }): ReactElement {
-  const statusClass =
-    analysis.safetyLevel === "고위험"
-      ? "danger"
-      : analysis.safetyLevel === "주의"
-        ? "warning"
-        : "safe";
-
-  return (
-    <div className="analysis-result">
-      <div className="metric-row">
-        <span>복용 안전도</span>
-        <strong className={statusClass}>{analysis.safetyLevel}</strong>
-      </div>
-      <p>
-        분석 성분:{" "}
-        <strong>{analysis.ingredients.length ? analysis.ingredients.join(", ") : "미입력"}</strong>
-      </p>
-      <ul>
-        {analysis.findings.length ? (
-          analysis.findings.map((finding) => (
-            <li key={finding.id}>
-              <strong>[{finding.level}]</strong> {finding.message}
-            </li>
-          ))
-        ) : (
-          <li>중대한 충돌은 탐지되지 않았습니다.</li>
-        )}
-      </ul>
-    </div>
-  );
-}
-
-function TimelinePanel({ timeline }: { timeline: string[] }): ReactElement {
-  return (
-    <section className="card compact-card" aria-labelledby="timeline-title">
-      <div className="section-heading">
-        <p className="eyebrow">Timeline</p>
-        <h2 id="timeline-title">오늘 복용 흐름</h2>
-      </div>
-      <ol className="timeline-list">
-        {timeline.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-interface ChatPanelProps {
-  chatInput: string;
-  messages: ChatMessage[];
-  onChatInputChange: (value: string) => void;
-  onSend: () => void;
-}
-
-function ChatPanel({
-  chatInput,
-  messages,
-  onChatInputChange,
-  onSend,
-}: ChatPanelProps): ReactElement {
-  return (
-    <section className="card compact-card chat-card" aria-labelledby="chat-title">
-      <div className="section-heading">
-        <p className="eyebrow">Assistant</p>
-        <h2 id="chat-title">AI 채팅</h2>
-      </div>
-      <div className="chat-log" aria-live="polite">
-        {messages.map((message) => (
-          <p className={message.role === "user" ? "chat-bubble user" : "chat-bubble"} key={message.id}>
-            {message.text}
-          </p>
-        ))}
-      </div>
-      <div className="chat-input-row">
-        <input
-          aria-label="AI 비서에게 질문"
-          onChange={(event) => onChatInputChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") onSend();
-          }}
-          placeholder="감기약이랑 같이 먹어도 돼?"
-          type="text"
-          value={chatInput}
-        />
-        <button className="primary-button" onClick={onSend} type="button">
-          전송
-        </button>
-      </div>
-    </section>
-  );
-}
-
-interface ReportSnapshotProps {
-  analysis: AnalysisResult;
-  currentProfile: Profile;
-}
-
-function ReportSnapshot({ analysis, currentProfile }: ReportSnapshotProps): ReactElement {
-  return (
-    <section className="card compact-card">
-      <div className="section-heading">
-        <p className="eyebrow">Report</p>
-        <h2>의료 리포트 요약</h2>
-      </div>
-      <p className="muted">
-        {currentProfile.name} · {summarizeFindings(analysis.findings)}
-      </p>
-    </section>
-  );
-}
-
-interface ProfilesPageProps {
-  currentProfileId: string;
-  onProfileChange: (profileId: string) => void;
-}
-
-function ProfilesPage({
-  currentProfileId,
-  onProfileChange,
-}: ProfilesPageProps): ReactElement {
-  return (
-    <section className="page-grid">
-      {profiles.map((profile) => (
-        <article className="card profile-card" key={profile.id}>
-          <div>
-            <p className="eyebrow">{profile.type === "pet" ? "Pet" : "Family"}</p>
-            <h2>{profile.name}</h2>
-            <p className="muted">연령대 {profile.ageGroup}+ · 복용 {profile.meds.length}개</p>
-          </div>
-          <ul className="tag-list">
-            {profile.meds.map((med) => (
-              <li key={med}>{med}</li>
-            ))}
-          </ul>
-          <button
-            className={currentProfileId === profile.id ? "primary-button" : "ghost-button"}
-            onClick={() => onProfileChange(profile.id)}
-            type="button"
-          >
-            {currentProfileId === profile.id ? "확인 중" : "프로필 보기"}
-          </button>
-        </article>
-      ))}
-    </section>
-  );
-}
-
-function ReportPage({ currentProfile }: { currentProfile: Profile }): ReactElement {
-  const analysis = buildEmptyAnalysis(currentProfile);
-
-  return (
-    <section className="report-page card">
-      <div className="section-heading">
-        <p className="eyebrow">Medical Report</p>
-        <h2>전문가용 의료 리포트</h2>
-      </div>
-      <div className="report-document">
-        <p>
-          <strong>대상:</strong> {currentProfile.name}
-        </p>
-        <p>
-          <strong>현재 복용 성분:</strong> {analysis.ingredients.join(", ")}
-        </p>
-        <p>
-          <strong>복용 안전도:</strong> {analysis.safetyLevel}
-        </p>
-        <p>
-          <strong>AI 종합 의견:</strong> {summarizeFindings(analysis.findings)}
-        </p>
-        <p className="muted">본 리포트는 데모 데이터 기반이며 의료행위를 대체하지 않습니다.</p>
-      </div>
-      <button className="primary-button" onClick={() => window.print()} type="button">
-        인쇄 / PDF 저장
-      </button>
-    </section>
-  );
-}
-
-function AdminPage(): ReactElement {
-  return (
-    <div className="admin-layout">
-      <section className="card">
-        <div className="section-heading">
-          <p className="eyebrow">Admin</p>
-          <h2>운영 현황</h2>
-        </div>
-        <div className="stat-grid">
-          {reportStatuses.map((status) => (
-            <div className="stat-card" key={status.label}>
-              <span>{status.label}</span>
-              <strong>{status.value}</strong>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="card">
-        <div className="section-heading">
-          <p className="eyebrow">Users</p>
-          <h2>데모 사용자</h2>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>이름</th>
-                <th>역할</th>
-                <th>상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {demoUsers.map((demoUser) => (
-                <tr key={demoUser.id}>
-                  <td>{demoUser.name}</td>
-                  <td>{demoUser.role}</td>
-                  <td>활성</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="card">
-        <div className="section-heading">
-          <p className="eyebrow">Rules</p>
-          <h2>상호작용 룰</h2>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>성분 조합</th>
-                <th>등급</th>
-                <th>안내</th>
-              </tr>
-            </thead>
-            <tbody>
-              {interactionRules.map((rule) => (
-                <tr key={rule.id}>
-                  <td>{rule.pair.join(" + ")}</td>
-                  <td>{rule.level}</td>
-                  <td>{rule.message}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function ThemeToggle({
-  onToggle,
-  theme,
-}: {
-  onToggle: () => void;
-  theme: ThemeMode;
-}): ReactElement {
-  return (
-    <button className="theme-toggle" onClick={onToggle} type="button">
-      {theme === "light" ? "Dark" : "Light"}
-    </button>
   );
 }
 
@@ -668,7 +391,18 @@ function getRouteFromLocation(): Route {
 
 function normalizeRoute(path: string): Route {
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  if (["/", "/login", "/profiles", "/report", "/admin"].includes(normalized)) {
+  if (
+    [
+      "/",
+      "/scan",
+      "/profiles",
+      "/reminders",
+      "/chat",
+      "/family",
+      "/service-admin",
+      "/login",
+    ].includes(normalized)
+  ) {
     return normalized as Route;
   }
   return "/";
@@ -680,4 +414,102 @@ function pushRoute(route: Route): void {
 
 function replaceRoute(route: Route): void {
   window.history.replaceState({}, "", `${basePath}${route === "/" ? "/" : route}`);
+}
+
+function displayProfileForUser(
+  profile: CareProfile,
+  user: DemoUser | null,
+  familyMembers: FamilyMember[],
+): CareProfile {
+  if (profile.name === "나") {
+    const ownerName = familyMembers.find((member) => member.userId === profile.ownerUserId)?.displayName;
+    if (ownerName) return { ...profile, name: ownerName };
+    if (user?.name && (!profile.ownerUserId || profile.ownerUserId === user.id)) {
+      return { ...profile, name: user.name };
+    }
+  }
+
+  return profile;
+}
+
+function profilesAvailableForMedicationRegistration(
+  profiles: CareProfile[],
+  user: DemoUser | null,
+): CareProfile[] {
+  if (!user) return [];
+  if (user.familyRole === "owner" || user.familyRole === "manager" || user.role === "admin") {
+    return profiles;
+  }
+
+  const ownProfiles = profiles.filter((profile) => profile.ownerUserId === user.id);
+  return ownProfiles.length ? ownProfiles : profiles.filter((profile) => profile.name === "나");
+}
+
+function defaultProfileIdForUser(
+  profiles: CareProfile[],
+  user: DemoUser | null,
+  excludedProfileId: string,
+): string {
+  const nextProfiles = profiles.filter((profile) => profile.id !== excludedProfileId);
+  return (
+    nextProfiles.find((profile) => profile.ownerUserId === user?.id)?.id ||
+    nextProfiles.find((profile) => profile.type === "self")?.id ||
+    nextProfiles[0]?.id ||
+    seedCareProfiles[0].id
+  );
+}
+
+function mapSupabaseUser(user: {
+  id: string;
+  email?: string;
+  user_metadata?: { full_name?: string; name?: string };
+}): DemoUser {
+  return {
+    id: user.id,
+    name: user.user_metadata?.full_name || user.user_metadata?.name || user.email || "가족 구성원",
+    role: "user",
+    familyRole: "owner",
+    email: user.email || "",
+  };
+}
+
+function migrateDemoFamilyMembers(members: FamilyMember[]): FamilyMember[] {
+  return members.map((member) => {
+    if (member.userId === "user-owner" && member.displayName === "가족 대표") {
+      return {
+        ...member,
+        displayName: "김정웅",
+        email: member.email === "owner@optime.family" ? "jungwoong@optime.family" : member.email,
+      };
+    }
+
+    if (member.userId === "user-member" && member.displayName === "어머니") {
+      return {
+        ...member,
+        displayName: "공윤아",
+        email: member.email === "member@optime.family" ? "yoona@optime.family" : member.email,
+      };
+    }
+
+    return member;
+  });
+}
+
+function migrateDemoCareProfiles(profiles: CareProfile[]): CareProfile[] {
+  return profiles.map((profile) => {
+    if (profile.id === "profile-self") {
+      return { ...profile, ownerUserId: "user-owner", name: profile.name || "나" };
+    }
+
+    if (profile.id === "profile-mother") {
+      return {
+        ...profile,
+        ownerUserId: "user-member",
+        name: profile.name === "어머니" ? "공윤아" : profile.name,
+        type: "self",
+      };
+    }
+
+    return profile;
+  });
 }
