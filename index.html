@@ -7,27 +7,30 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
-      --deep-emerald: #002D24;
-      --gold: #D4AF37;
-      --platinum: #F7F7F4;
+      --mint-900: #0f4f43;
+      --mint-700: #2f8f7b;
+      --mint-500: #56c0a7;
+      --mint-100: #edfdf8;
+      --mint-50: #f7fffc;
+      --accent: #12b886;
     }
     body {
-      background: radial-gradient(circle at top right, #0b4d3f 0%, #001712 45%, #000f0c 100%);
-      color: #f8f8f6;
+      background: radial-gradient(circle at top right, #d5fff1 0%, #f1fffa 45%, #ffffff 100%);
+      color: #17443a;
       min-height: 100vh;
     }
     .glass {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.86);
       backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      border: 1px solid rgba(36, 170, 139, 0.2);
+      box-shadow: 0 12px 26px rgba(25, 103, 87, 0.12);
     }
     .fade {
       animation: fadeIn .4s ease;
     }
     @keyframes fadeIn { from {opacity: 0; transform: translateY(5px);} to {opacity: 1; transform: translateY(0);} }
-    .danger { color: #ff7676; }
-    .safe { color: #7bf2be; }
+    .danger { color: #d94848; }
+    .safe { color: #0f9f71; }
     @media print {
       body > *:not(#reportPrint) { display: none !important; }
       #reportPrint { display: block !important; color: black; }
@@ -37,64 +40,64 @@
 <body class="p-4 md:p-8">
   <div class="max-w-6xl mx-auto space-y-6">
     <header class="glass rounded-2xl p-6">
-      <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-[#D4AF37]">옵티미 (Opti-Me)</h1>
-      <p class="text-sm md:text-base text-slate-200 mt-2">연령 맞춤형 AI 복용비서 · 약물/영양제 상호작용 안전 가이드</p>
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-[#0f7f66]">옵티미 (Opti-Me)</h1>
+      <p class="text-sm md:text-base text-[#2d6d60] mt-2">연령 맞춤형 AI 복용비서 · 약물/영양제 상호작용 안전 가이드</p>
     </header>
 
     <section class="grid md:grid-cols-3 gap-4">
       <div class="glass rounded-2xl p-4">
-        <label class="text-sm text-slate-300">연령대 선택</label>
-        <select id="ageGroup" class="w-full mt-2 rounded-xl bg-black/30 p-2 border border-white/20">
+        <label class="text-sm text-[#2d6d60]">연령대 선택</label>
+        <select id="ageGroup" class="w-full mt-2 rounded-xl bg-white p-2 border border-emerald-200 text-emerald-900">
           <option value="20">20~39세</option>
           <option value="40">40~59세</option>
           <option value="60" selected>60세 이상</option>
         </select>
       </div>
       <div class="glass rounded-2xl p-4">
-        <label class="text-sm text-slate-300">AI 비서 말투</label>
-        <select id="assistantTone" class="w-full mt-2 rounded-xl bg-black/30 p-2 border border-white/20">
+        <label class="text-sm text-[#2d6d60]">AI 비서 말투</label>
+        <select id="assistantTone" class="w-full mt-2 rounded-xl bg-white p-2 border border-emerald-200 text-emerald-900">
           <option value="pro">전문 수석 비서</option>
           <option value="warm">다정한 친구</option>
         </select>
       </div>
       <div class="glass rounded-2xl p-4">
-        <label class="text-sm text-slate-300">프로필 선택</label>
+        <label class="text-sm text-[#2d6d60]">프로필 선택</label>
         <div class="mt-2 flex gap-2 flex-wrap" id="profiles"></div>
       </div>
     </section>
 
     <section class="grid lg:grid-cols-2 gap-4">
       <div class="glass rounded-2xl p-5 space-y-4 fade">
-        <h2 class="text-xl font-semibold text-[#D4AF37]">A. AI 매직 스캔 & 정밀 분석</h2>
+        <h2 class="text-xl font-semibold text-[#0f7f66]">A. AI 매직 스캔 & 정밀 분석</h2>
         <input id="photo" type="file" accept="image/*" class="w-full text-sm" />
-        <textarea id="ingredientInput" rows="4" class="w-full rounded-xl bg-black/30 p-3 border border-white/20"
+        <textarea id="ingredientInput" rows="4" class="w-full rounded-xl bg-white p-3 border border-emerald-200"
           placeholder="예시: 비타민C 1000mg, 칼슘 500mg, 철분 18mg"></textarea>
-        <button id="analyzeBtn" class="w-full bg-[#D4AF37] text-[#002D24] font-semibold py-2 rounded-xl">성분 분석하기</button>
-        <div id="analysis" class="text-sm text-slate-100 space-y-2"></div>
+        <button id="analyzeBtn" class="w-full bg-[#12b886] text-white font-semibold py-2 rounded-xl">성분 분석하기</button>
+        <div id="analysis" class="text-sm text-[#215e52] space-y-2"></div>
       </div>
 
       <div class="glass rounded-2xl p-5 space-y-4 fade">
-        <h2 class="text-xl font-semibold text-[#D4AF37]">C. 지능형 타임라인 & AI 채팅</h2>
-        <div id="timeline" class="text-sm bg-black/20 rounded-xl p-3">분석 후 최적 복용 스케줄이 표시됩니다.</div>
-        <div class="bg-black/20 rounded-xl p-3 h-64 overflow-y-auto space-y-2" id="chatLog"></div>
+        <h2 class="text-xl font-semibold text-[#0f7f66]">C. 지능형 타임라인 & AI 채팅</h2>
+        <div id="timeline" class="text-sm bg-emerald-50 rounded-xl p-3 border border-emerald-100">분석 후 최적 복용 스케줄이 표시됩니다.</div>
+        <div class="bg-emerald-50 rounded-xl p-3 h-64 overflow-y-auto space-y-2 border border-emerald-100" id="chatLog"></div>
         <div class="flex gap-2">
-          <input id="chatInput" type="text" class="flex-1 rounded-xl bg-black/30 p-2 border border-white/20" placeholder="예: 감기약이랑 같이 먹어도 돼?" />
-          <button id="sendChat" class="bg-[#D4AF37] text-[#002D24] px-4 rounded-xl font-semibold">전송</button>
+          <input id="chatInput" type="text" class="flex-1 rounded-xl bg-white p-2 border border-emerald-200" placeholder="예: 감기약이랑 같이 먹어도 돼?" />
+          <button id="sendChat" class="bg-[#12b886] text-white px-4 rounded-xl font-semibold">전송</button>
         </div>
       </div>
     </section>
 
     <section class="grid lg:grid-cols-2 gap-4">
       <div class="glass rounded-2xl p-5 space-y-3">
-        <h2 class="text-xl font-semibold text-[#D4AF37]">B. 옵티-패밀리 & 펫 허브</h2>
+        <h2 class="text-xl font-semibold text-[#0f7f66]">B. 옵티-패밀리 & 펫 허브</h2>
         <ul id="familyStatus" class="text-sm space-y-2"></ul>
       </div>
 
       <div class="glass rounded-2xl p-5 space-y-3">
-        <h2 class="text-xl font-semibold text-[#D4AF37]">D. 전문가용 의료 리포트</h2>
-        <button id="buildReport" class="w-full bg-white/90 text-[#002D24] py-2 rounded-xl font-semibold">리포트 생성</button>
-        <button onclick="window.print()" class="w-full bg-[#D4AF37] text-[#002D24] py-2 rounded-xl font-semibold">인쇄 / PDF 저장</button>
-        <div id="reportPreview" class="text-sm bg-black/20 rounded-xl p-3">리포트 미생성</div>
+        <h2 class="text-xl font-semibold text-[#0f7f66]">D. 전문가용 의료 리포트</h2>
+        <button id="buildReport" class="w-full bg-white text-[#0f7f66] py-2 rounded-xl font-semibold border border-emerald-200">리포트 생성</button>
+        <button onclick="window.print()" class="w-full bg-[#12b886] text-white py-2 rounded-xl font-semibold">인쇄 / PDF 저장</button>
+        <div id="reportPreview" class="text-sm bg-emerald-50 rounded-xl p-3 border border-emerald-100">리포트 미생성</div>
       </div>
     </section>
 
@@ -128,7 +131,7 @@
       state.profiles.forEach(p => {
         const btn = document.createElement('button');
         btn.textContent = p.name;
-        btn.className = `px-3 py-1 rounded-full text-sm border ${state.currentProfile===p.name ? 'bg-[#D4AF37] text-[#002D24] border-[#D4AF37]' : 'bg-black/20 border-white/20'}`;
+        btn.className = `px-3 py-1 rounded-full text-sm border ${state.currentProfile===p.name ? 'bg-[#12b886] text-white border-[#12b886]' : 'bg-white border-emerald-200 text-emerald-900'}`;
         btn.onclick = () => { state.currentProfile = p.name; renderProfiles(); renderFamilyStatus(); };
         profilesEl.appendChild(btn);
       });
@@ -139,8 +142,8 @@
       ul.innerHTML = '';
       state.profiles.forEach(p => {
         const li = document.createElement('li');
-        li.className = 'p-2 rounded bg-black/20';
-        li.innerHTML = `<strong>${p.name}</strong> · ${p.type==='pet'?'반려견':'가족'} · 복용: ${p.meds.join(', ')} <span class='text-[#D4AF37] float-right'>${p.name===state.currentProfile?'확인중':'정상'}</span>`;
+        li.className = 'p-2 rounded bg-emerald-50 border border-emerald-100';
+        li.innerHTML = `<strong>${p.name}</strong> · ${p.type==='pet'?'반려견':'가족'} · 복용: ${p.meds.join(', ')} <span class='text-[#12b886] float-right'>${p.name===state.currentProfile?'확인중':'정상'}</span>`;
         ul.appendChild(li);
       });
     }
@@ -166,7 +169,7 @@
 
       analysis.innerHTML = `
         <p>분석 성분: <strong>${state.ingredients.join(', ')}</strong></p>
-        <p>복용 안전도: <strong class="${gauge==='고위험'?'danger':gauge==='주의'?'text-yellow-300':'safe'}">${gauge}</strong></p>
+        <p>복용 안전도: <strong class="${gauge==='고위험'?'danger':gauge==='주의'?'text-amber-600':'safe'}">${gauge}</strong></p>
         <ul class="list-disc pl-5">${findings.length ? findings.map(f=>`<li><b>[${f.level}]</b> ${f.msg}</li>`).join('') : '<li>중대한 충돌은 탐지되지 않았습니다.</li>'}</ul>
       `;
 
@@ -200,7 +203,7 @@
     function addChat(role, text) {
       const log = document.getElementById('chatLog');
       const bubble = document.createElement('div');
-      bubble.className = `rounded-xl p-2 text-sm ${role==='user'?'bg-[#D4AF37] text-[#002D24] ml-8':'bg-black/30 mr-8'}`;
+      bubble.className = `rounded-xl p-2 text-sm ${role==='user'?'bg-[#12b886] text-white ml-8':'bg-white border border-emerald-200 text-emerald-900 mr-8'}`;
       bubble.textContent = text;
       log.appendChild(bubble);
       log.scrollTop = log.scrollHeight;
