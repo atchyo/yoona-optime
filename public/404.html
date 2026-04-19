@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Opti-Me</title>
+    <script>
+      const repo = "/yoona-app";
+      const path = window.location.pathname;
+      const route = path.startsWith(repo) ? path.slice(repo.length) : "/";
+      const query = window.location.search || "";
+      const hash = window.location.hash || "";
+      window.location.replace(`${repo}/?route=${encodeURIComponent(route || "/")}${query ? `&${query.slice(1)}` : ""}${hash}`);
+    </script>
+  </head>
+  <body></body>
+</html>
