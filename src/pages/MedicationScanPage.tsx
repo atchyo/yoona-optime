@@ -349,7 +349,7 @@ export function MedicationScanPage({
           <p className="eyebrow">Drug Database Matches</p>
           <h2>공식 DB 후보 확인</h2>
           <p className="muted">
-            Supabase/API 키가 없으면 데모 후보 DB로 검색합니다. 실제 식약처/RxNorm 검색은 Supabase Edge Function 배포 후 연결됩니다.
+            실제 공식 데이터베이스 검색 결과만 표시합니다. 후보가 없으면 수기 입력 후 임시약으로 저장해 주세요.
           </p>
         </div>
         <div className="manual-search">
@@ -381,6 +381,11 @@ export function MedicationScanPage({
             </article>
           ))}
         </div>
+        {!matches.length && (
+          <p className="form-note">
+            아직 공식 DB 후보가 없습니다. 검색어를 바꾸거나 아래에서 약명과 성분을 직접 입력해 저장할 수 있습니다.
+          </p>
+        )}
         <div className="manual-box">
           <h3>후보에 없나요?</h3>
           <input
