@@ -250,7 +250,22 @@ export function App(): ReactElement {
   }
 
   function handleConfirmMedication(medication: Medication, scan: OcrScan): void {
-    setMedications((current) => [medication, ...current]);
+    setMedications((current) => {
+      const existingIndex = current.findIndex(
+        (item) =>
+          item.careProfileId === medication.careProfileId &&
+          item.productName === medication.productName &&
+          item.source === medication.source,
+      );
+
+      if (existingIndex === -1) {
+        return [medication, ...current];
+      }
+
+      const next = [...current];
+      next[existingIndex] = { ...next[existingIndex], ...medication, id: next[existingIndex].id };
+      return next;
+    });
     setScans((current) => [scan, ...current]);
     handleProfileChange(medication.careProfileId);
   }
@@ -259,9 +274,27 @@ export function App(): ReactElement {
     medication: TemporaryMedication,
     scan: OcrScan,
   ): void {
-    setTemporaryMedications((current) => [medication, ...current]);
+    setTemporaryMedications((current) => {
+      const existingIndex = current.findIndex(
+        (item) =>
+          item.careProfileId === medication.careProfileId &&
+          item.rawName === medication.rawName,
+      );
+
+      if (existingIndex === -1) {
+        return [medication, ...current];
+      }
+
+      const next = [...current];
+      next[existingIndex] = { ...next[existingIndex], ...medication, id: next[existingIndex].id };
+      return next;
+    });
     setScans((current) => [scan, ...current]);
     handleProfileChange(medication.careProfileId);
+  }
+
+  function handleDeleteMedication(medicationId: string): void {
+    setMedications((current) => current.filter((medication) => medication.id !== medicationId));
   }
 
   function handleMarkTaken(scheduleId: string): void {
@@ -369,6 +402,7 @@ export function App(): ReactElement {
           currentProfileId={currentProfile.id}
           familyMembers={familyMembers}
           medications={medications}
+          onDeleteMedication={handleDeleteMedication}
           onProfileChange={handleProfileChange}
           schedules={medicationSchedules}
           temporaryMedications={temporaryMedications}

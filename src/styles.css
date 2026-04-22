@@ -753,6 +753,30 @@ textarea {
   margin-bottom: 14px;
 }
 
+.search-input-wrap {
+  position: relative;
+}
+
+.search-input-wrap input {
+  padding-right: 48px;
+}
+
+.search-clear-button {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  padding: 0;
+  transform: translateY(-50%);
+}
+
 .hidden-input {
   display: none;
 }
@@ -827,7 +851,7 @@ textarea {
 
 .match-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
 }
 
@@ -999,11 +1023,17 @@ textarea {
 
 .report-med-row {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
   padding: 12px;
+}
+
+.report-delete-button {
+  align-self: start;
+  min-width: 84px;
 }
 
 .report-med-row strong,

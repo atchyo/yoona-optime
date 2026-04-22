@@ -27,7 +27,9 @@ Deno.serve(async (req) => {
     ...(await searchMfdsPermit(query)),
     ...(await searchMfdsEasyDrug(query)),
     ...(await searchRxNorm(query)),
-  ].slice(0, 10);
+  ]
+    .sort((a, b) => compareMatches(query, a, b))
+    .slice(0, 10);
 
   return jsonResponse({ matches });
 });
@@ -97,13 +99,18 @@ async function searchMfdsEasyDrug(query: string): Promise<DrugMatch[]> {
 }
 
 async function searchRxNorm(query: string): Promise<DrugMatch[]> {
+  if (/[가-힣]/.test(query)) return [];
+
   const url = new URL("https://rxnav.nlm.nih.gov/REST/approximateTerm.json");
   url.searchParams.set("term", query);
   url.searchParams.set("maxEntries", "5");
   const response = await fetch(url);
   if (!response.ok) return [];
   const payload = await response.json();
-  const candidates = payload?.approximateGroup?.candidate || [];
+  const candidates = (payload?.approximateGroup?.candidate || []).filter((candidate: Record<string, string>) => {
+    const score = Number(candidate.score || 0);
+    return score >= 55;
+  });
 
   return candidates.map((candidate: Record<string, string>) => ({
     id: `rxnorm-${candidate.rxcui}`,
@@ -186,4 +193,26 @@ function parseIngredients(value: string): Array<{ name: string; amount?: string 
 
 function compactTextList(values: Array<string | undefined>): string[] {
   return values.map((value) => value?.trim()).filter(Boolean) as string[];
+}
+
+function compareMatches(query: string, left: DrugMatch, right: DrugMatch): number {
+  const scoreGap = matchPriority(query, right.productName) - matchPriority(query, left.productName);
+  if (scoreGap !== 0) return scoreGap;
+  return right.confidence - left.confidence;
+}
+
+function matchPriority(query: string, productName: string): number {
+  const normalizedQuery = normalizeName(query);
+  const normalizedProductName = normalizeName(productName);
+
+  if (!normalizedQuery || !normalizedProductName) return 0;
+  if (normalizedProductName === normalizedQuery) return 5;
+  if (normalizedProductName.startsWith(normalizedQuery)) return 4;
+  if (normalizedProductName.includes(normalizedQuery)) return 3;
+  if (normalizedQuery.split(/\s+/).every((token) => normalizedProductName.includes(token))) return 2;
+  return 1;
+}
+
+function normalizeName(value: string): string {
+  return value.toLowerCase().replace(/[\s\-_/()[\].,]/g, "");
 }

@@ -13,6 +13,7 @@ interface ProfilesPageProps {
   currentProfileId: string;
   familyMembers: FamilyMember[];
   medications: Medication[];
+  onDeleteMedication: (medicationId: string) => void;
   schedules: MedicationSchedule[];
   temporaryMedications: TemporaryMedication[];
   onProfileChange: (profileId: string) => void;
@@ -23,6 +24,7 @@ export function ProfilesPage({
   currentProfileId,
   familyMembers,
   medications,
+  onDeleteMedication,
   schedules,
   temporaryMedications,
   onProfileChange,
@@ -34,6 +36,7 @@ export function ProfilesPage({
           key={profile.id}
           familyMembers={familyMembers}
           medications={medications.filter((medication) => medication.careProfileId === profile.id)}
+          onDeleteMedication={onDeleteMedication}
           onProfileChange={onProfileChange}
           profile={profile}
           schedules={schedules}
@@ -48,6 +51,7 @@ export function ProfilesPage({
 function ProfileCard({
   familyMembers,
   medications,
+  onDeleteMedication,
   onProfileChange,
   profile,
   schedules,
@@ -56,6 +60,7 @@ function ProfileCard({
 }: {
   familyMembers: FamilyMember[];
   medications: Medication[];
+  onDeleteMedication: (medicationId: string) => void;
   onProfileChange: (profileId: string) => void;
   profile: CareProfile;
   schedules: MedicationSchedule[];
@@ -111,6 +116,7 @@ function ProfileCard({
           >
             <CareReport
               medications={medications}
+              onDeleteMedication={onDeleteMedication}
               onClose={() => setIsReportOpen(false)}
               profile={profile}
               profileLabel={profileLabel}
@@ -125,12 +131,14 @@ function ProfileCard({
 
 function CareReport({
   medications,
+  onDeleteMedication,
   onClose,
   profile,
   profileLabel,
   schedules,
 }: {
   medications: Medication[];
+  onDeleteMedication: (medicationId: string) => void;
   onClose: () => void;
   profile: CareProfile;
   profileLabel: string;
@@ -184,6 +192,9 @@ function CareReport({
                   <dd>{scheduleText(medication, schedules)}</dd>
                 </div>
               </dl>
+              <button className="danger-button report-delete-button" onClick={() => onDeleteMedication(medication.id)} type="button">
+                약 삭제
+              </button>
             </article>
           ))
         ) : (
@@ -239,7 +250,9 @@ function formatIngredient(ingredient: Medication["ingredients"][number]): string
 
 function periodText(medication: Medication): string {
   const start = medication.startedAt || "시작일 미등록";
-  return medication.reviewAt ? `${start}부터, ${medication.reviewAt} 검토` : `${start}부터`;
+  return medication.reviewAt
+    ? `복용 시작 ${start} · 검토일 ${medication.reviewAt}`
+    : `${start}부터 복용 기록`;
 }
 
 function scheduleText(medication: Medication, schedules: MedicationSchedule[]): string {

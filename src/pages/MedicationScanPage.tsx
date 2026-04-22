@@ -36,12 +36,14 @@ export function MedicationScanPage({
   const [manualName, setManualName] = useState("");
   const [manualIngredient, setManualIngredient] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const savingLockRef = useRef(false);
 
   useEffect(() => {
     if (careProfiles.length && !careProfiles.some((profile) => profile.id === selectedProfileId)) {
@@ -61,8 +63,23 @@ export function MedicationScanPage({
     };
   }, [cameraStream]);
 
+  function resetSearchArtifacts(options?: { preserveManualName?: boolean }): void {
+    setOcrText("");
+    setOcrConfidence(0);
+    setCandidates([]);
+    setMatches([]);
+    setManualIngredient("");
+    setPhotoDataUrl(undefined);
+    setPhotoName("");
+    setCameraError("");
+    if (!options?.preserveManualName) {
+      setManualName("");
+    }
+  }
+
   async function handleFile(file: File): Promise<void> {
     try {
+      resetSearchArtifacts();
       setIsProcessing(true);
       setProgress("이미지를 압축하는 중");
       setPhotoName(file.name);
@@ -168,12 +185,12 @@ export function MedicationScanPage({
       return;
     }
 
+    resetSearchArtifacts({ preserveManualName: true });
     setIsProcessing(true);
     setProgress(`"${query}" 약 데이터베이스 검색 중`);
     const nextMatches = await searchDrugDatabase(query);
-    setCandidates((current) => Array.from(new Set([query, ...current])));
+    setCandidates([query]);
     setMatches(dedupeMatches(nextMatches));
-    setOcrText((current) => current || `수기 검색: ${query}`);
     setProgress(nextMatches.length ? "검색 후보를 확인해 주세요." : "공식 후보 없음. 임시약 저장 또는 수기 보완이 필요합니다.");
     setIsProcessing(false);
   }
@@ -203,6 +220,11 @@ export function MedicationScanPage({
   }
 
   function confirmMatch(match: DrugDatabaseMatch): void {
+    if (savingLockRef.current || isSaving) return;
+
+    savingLockRef.current = true;
+    setIsSaving(true);
+    setProgress(`${match.productName} 저장 중`);
     const scan = buildScan("confirmed", matches);
     onConfirmMedication(
       {
@@ -217,15 +239,22 @@ export function MedicationScanPage({
         warnings: match.warnings,
         interactions: match.interactions,
         startedAt: new Date().toISOString().slice(0, 10),
-        reviewAt: reviewDateFromToday(30),
       },
       scan,
     );
+    resetSearchArtifacts();
     setProgress(`${match.productName} 등록 완료`);
+    setIsSaving(false);
+    savingLockRef.current = false;
   }
 
   function saveTemporary(): void {
+    if (savingLockRef.current || isSaving) return;
+
+    savingLockRef.current = true;
+    setIsSaving(true);
     const rawName = manualName || candidates[0] || "이름 미확인 약";
+    setProgress(`${rawName} 임시약 저장 중`);
     const scan = buildScan("manual_needed", matches);
     onCreateTemporaryMedication(
       {
@@ -238,7 +267,10 @@ export function MedicationScanPage({
       },
       scan,
     );
+    resetSearchArtifacts();
     setProgress(`${rawName} 임시약으로 저장 완료`);
+    setIsSaving(false);
+    savingLockRef.current = false;
   }
 
   return (
@@ -316,10 +348,6 @@ export function MedicationScanPage({
           </figure>
         )}
 
-        <div className="scan-status">
-          <strong>{isProcessing ? "처리 중" : "상태"}</strong>
-          <span>{progress || "사진을 촬영하거나 파일로 첨부해 주세요."}</span>
-        </div>
       </section>
 
       <section className="card">
@@ -353,30 +381,46 @@ export function MedicationScanPage({
           </p>
         </div>
         <div className="manual-search">
-          <input
-            aria-label="약 이름 직접 검색"
-            onChange={(event) => setManualName(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") void handleManualSearch();
-            }}
-            placeholder="약 이름 직접 입력: 예) 타이레놀, 오메가3, 감기약"
-            type="text"
-            value={manualName}
-          />
-          <button className="primary-button" onClick={() => void handleManualSearch()} type="button">
+          <div className="search-input-wrap">
+            <input
+              aria-label="약 이름 직접 검색"
+              onChange={(event) => setManualName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") void handleManualSearch();
+              }}
+              placeholder="약 이름 직접 입력: 예) 타이레놀, 판콜, 오메가3"
+              type="text"
+              value={manualName}
+            />
+            {manualName && (
+              <button
+                aria-label="검색어 지우기"
+                className="search-clear-button"
+                onClick={() => setManualName("")}
+                type="button"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <button className="primary-button" disabled={isProcessing} onClick={() => void handleManualSearch()} type="button">
             약DB 검색
           </button>
+        </div>
+        <div className="scan-status">
+          <strong>{isProcessing ? "처리 중" : "상태"}</strong>
+          <span>{progress || "검색 결과와 저장 상태가 여기에 표시됩니다."}</span>
         </div>
         <div className="match-grid">
           {matches.map((match) => (
             <article className="match-card" key={match.id}>
               <div>
                 <strong>{match.productName}</strong>
-                <p>{match.source} · 신뢰도 {Math.round(match.confidence * 100)}%</p>
+                <p>{sourceLabel(match.source)} · 신뢰도 {Math.round(match.confidence * 100)}%</p>
                 <p>{match.ingredients.map((ingredient) => `${ingredient.name} ${ingredient.amount || ""}`).join(", ")}</p>
               </div>
-              <button className="primary-button" onClick={() => confirmMatch(match)} type="button">
-                이 약으로 등록
+              <button className="primary-button" disabled={isSaving} onClick={() => confirmMatch(match)} type="button">
+                {isSaving ? "저장 중..." : "이 약으로 등록"}
               </button>
             </article>
           ))}
@@ -402,8 +446,8 @@ export function MedicationScanPage({
             type="text"
             value={manualIngredient}
           />
-          <button className="temporary-button" onClick={saveTemporary} type="button">
-            임시약으로 저장
+          <button className="temporary-button" disabled={isSaving} onClick={saveTemporary} type="button">
+            {isSaving ? "저장 중..." : "임시약으로 저장"}
           </button>
         </div>
       </section>
@@ -412,11 +456,14 @@ export function MedicationScanPage({
 }
 
 function dedupeMatches(matches: DrugDatabaseMatch[]): DrugDatabaseMatch[] {
-  return Array.from(new Map(matches.map((match) => [match.id, match])).values()).slice(0, 6);
+  return Array.from(new Map(matches.map((match) => [match.id, match])).values());
 }
 
-function reviewDateFromToday(days: number): string {
-  const nextDate = new Date();
-  nextDate.setDate(nextDate.getDate() + days);
-  return nextDate.toISOString().slice(0, 10);
+function sourceLabel(source: DrugDatabaseMatch["source"]): string {
+  if (source === "mfds_permit") return "식약처 허가정보";
+  if (source === "mfds_easy") return "e약은요";
+  if (source === "rxnorm") return "RxNorm";
+  if (source === "dailymed") return "DailyMed";
+  if (source === "openfda") return "openFDA";
+  return "수기입력";
 }
