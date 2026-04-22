@@ -36,16 +36,18 @@ async function searchMfdsPermit(query: string): Promise<DrugMatch[]> {
   const serviceKey = Deno.env.get("DATA_GO_KR_SERVICE_KEY");
   if (!serviceKey) return [];
 
-  const url = new URL("https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService07/getDrugPrdtPrmsnInq07");
-  url.searchParams.set("serviceKey", serviceKey);
-  url.searchParams.set("type", "json");
-  url.searchParams.set("item_name", query);
-  url.searchParams.set("numOfRows", "5");
-
-  const response = await fetch(url);
-  if (!response.ok) return [];
-  const payload = await response.json();
-  const items = normalizeItems(payload?.body?.items);
+  const payload = await fetchDataGoKrJson(
+    "https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService07/getDrugPrdtPrmsnInq07",
+    "serviceKey",
+    serviceKey,
+    {
+      type: "json",
+      item_name: query,
+      numOfRows: "5",
+      pageNo: "1",
+    },
+  );
+  const items = normalizeItems(extractItems(payload));
 
   return items.map((item: Record<string, string>, index: number) => ({
     id: `mfds-permit-${item.ITEM_SEQ || index}`,
@@ -66,16 +68,18 @@ async function searchMfdsEasyDrug(query: string): Promise<DrugMatch[]> {
   const serviceKey = Deno.env.get("DATA_GO_KR_SERVICE_KEY");
   if (!serviceKey) return [];
 
-  const url = new URL("https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList");
-  url.searchParams.set("ServiceKey", serviceKey);
-  url.searchParams.set("type", "json");
-  url.searchParams.set("itemName", query);
-  url.searchParams.set("numOfRows", "5");
-
-  const response = await fetch(url);
-  if (!response.ok) return [];
-  const payload = await response.json();
-  const items = normalizeItems(payload?.body?.items);
+  const payload = await fetchDataGoKrJson(
+    "https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList",
+    "ServiceKey",
+    serviceKey,
+    {
+      type: "json",
+      itemName: query,
+      numOfRows: "5",
+      pageNo: "1",
+    },
+  );
+  const items = normalizeItems(extractItems(payload));
 
   return items.map((item: Record<string, string>, index: number) => ({
     id: `mfds-easy-${item.itemSeq || index}`,
@@ -120,6 +124,56 @@ function normalizeItems(items: unknown): Array<Record<string, string>> {
   }
   if ((items as { item?: unknown }).item) return [(items as { item: Record<string, string> }).item];
   return [];
+}
+
+function extractItems(payload: unknown): unknown {
+  const body =
+    (payload as { response?: { body?: { items?: unknown } } })?.response?.body ||
+    (payload as { body?: { items?: unknown } })?.body;
+
+  return body?.items;
+}
+
+async function fetchDataGoKrJson(
+  baseUrl: string,
+  serviceKeyName: string,
+  serviceKey: string,
+  params: Record<string, string>,
+): Promise<unknown> {
+  const keyCandidates = Array.from(
+    new Set([serviceKey, safeDecode(serviceKey)]).values(),
+  ).filter(Boolean);
+
+  for (const key of keyCandidates) {
+    const url = new URL(baseUrl);
+    Object.entries(params).forEach(([name, value]) => {
+      url.searchParams.set(name, value);
+    });
+    url.searchParams.set(serviceKeyName, key);
+
+    const response = await fetch(url);
+    if (!response.ok) continue;
+
+    const payload = await response.json();
+    const resultCode = String(
+      (payload as { response?: { header?: { resultCode?: string } } })?.response?.header?.resultCode ||
+        (payload as { header?: { resultCode?: string } })?.header?.resultCode ||
+        "",
+    );
+
+    if (resultCode && resultCode !== "00") continue;
+    return payload;
+  }
+
+  return {};
+}
+
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 function parseIngredients(value: string): Array<{ name: string; amount?: string }> {

@@ -11,7 +11,7 @@ export async function searchDrugDatabase(query: string): Promise<DrugDatabaseMat
       const { data, error } = await supabase.functions.invoke("drug-search", {
         body: { query: trimmed },
       });
-      if (!error && Array.isArray(data?.matches)) {
+      if (!error && Array.isArray(data?.matches) && data.matches.length > 0) {
         return data.matches as DrugDatabaseMatch[];
       }
     } catch {
