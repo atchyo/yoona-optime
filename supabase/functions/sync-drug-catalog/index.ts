@@ -30,59 +30,70 @@ const DEFAULT_PAGE_COUNT = 15;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
 
-  const authHeader = req.headers.get("Authorization");
-  const anonClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: authHeader || "" } } },
-  );
-  const adminClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  try {
+    const authHeader = req.headers.get("Authorization");
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader || "" } } },
+    );
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-  const { data: userData, error: userError } = await anonClient.auth.getUser();
-  if (userError || !userData.user) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
+    if (authHeader) {
+      const { data: userData, error: userError } = await anonClient.auth.getUser();
+      if (userError || !userData.user) {
+        return jsonResponse({ ok: false, error: "로그인 상태를 확인하지 못했습니다." });
+      }
+
+      const { data: memberData, error: memberError } = await adminClient
+        .from("family_members")
+        .select("role")
+        .eq("user_id", userData.user.id)
+        .in("role", ["owner", "manager"])
+        .limit(1);
+
+      if (memberError) return jsonResponse({ ok: false, error: memberError.message });
+      if (!memberData?.length) {
+        return jsonResponse({ ok: false, error: "가족대표 또는 가족관리자만 약 DB를 동기화할 수 있습니다." });
+      }
+    }
+
+    const body = (await req.json().catch(() => ({}))) as SyncOptions;
+    const source = sanitizeSource(body.source, body.sources);
+    if (!source) {
+      return jsonResponse({ ok: false, error: "source is required" });
+    }
+    const reset = Boolean(body.reset);
+    const pageSize = clampNumber(body.pageSize, DEFAULT_PAGE_SIZE, 20, 500);
+    const startPage = clampNumber(body.startPage, 1, 1, 100000);
+    const pageCount = clampNumber(body.pageCount ?? body.maxPages, DEFAULT_PAGE_COUNT, 1, 50);
+    const serviceKey = Deno.env.get("DATA_GO_KR_SERVICE_KEY");
+
+    if (!serviceKey) {
+      return jsonResponse({ ok: false, error: "DATA_GO_KR_SERVICE_KEY is not configured" });
+    }
+
+    const summary = await syncSource(adminClient, {
+      serviceKey,
+      source,
+      reset,
+      pageSize,
+      startPage,
+      pageCount,
+    });
+
+    return jsonResponse({ ok: true, ...summary });
+  } catch (error) {
+    return jsonResponse({
+      ok: false,
+      error: error instanceof Error ? error.message : "동기화 중 알 수 없는 오류가 발생했습니다.",
+    });
   }
-
-  const { data: memberData, error: memberError } = await adminClient
-    .from("family_members")
-    .select("role")
-    .eq("user_id", userData.user.id)
-    .in("role", ["owner", "manager"])
-    .limit(1);
-
-  if (memberError) return jsonResponse({ error: memberError.message }, 400);
-  if (!memberData?.length) return jsonResponse({ error: "Forbidden" }, 403);
-
-  const body = (await req.json().catch(() => ({}))) as SyncOptions;
-  const source = sanitizeSource(body.source, body.sources);
-  if (!source) {
-    return jsonResponse({ error: "source is required" }, 400);
-  }
-  const reset = Boolean(body.reset);
-  const pageSize = clampNumber(body.pageSize, DEFAULT_PAGE_SIZE, 20, 500);
-  const startPage = clampNumber(body.startPage, 1, 1, 100000);
-  const pageCount = clampNumber(body.pageCount ?? body.maxPages, DEFAULT_PAGE_COUNT, 1, 50);
-  const serviceKey = Deno.env.get("DATA_GO_KR_SERVICE_KEY");
-
-  if (!serviceKey) {
-    return jsonResponse({ error: "DATA_GO_KR_SERVICE_KEY is not configured" }, 500);
-  }
-
-  const summary = await syncSource(adminClient, {
-    serviceKey,
-    source,
-    reset,
-    pageSize,
-    startPage,
-    pageCount,
-  });
-
-  return jsonResponse(summary);
 });
 
 function sanitizeSource(value?: SyncSource, sources?: SyncSource[]): SyncSource | null {

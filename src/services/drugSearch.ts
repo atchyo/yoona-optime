@@ -37,9 +37,9 @@ export async function syncDrugCatalog(): Promise<DrugCatalogSyncSummary[]> {
   }
 
   const sourcePlans = [
-    { source: "mfds_health", pageCount: 12 },
-    { source: "mfds_permit", pageCount: 10 },
-    { source: "mfds_easy", pageCount: 10 },
+    { source: "mfds_health", pageCount: 5 },
+    { source: "mfds_permit", pageCount: 5 },
+    { source: "mfds_easy", pageCount: 5 },
   ] as const;
 
   const summaries: DrugCatalogSyncSummary[] = [];
@@ -69,7 +69,11 @@ export async function syncDrugCatalog(): Promise<DrugCatalogSyncSummary[]> {
         throw new Error(`${plan.source} 동기화 응답 형식이 올바르지 않습니다.`);
       }
 
-      const summary = data as DrugCatalogSyncSummary;
+      if ((data as { ok?: boolean; error?: string }).ok === false) {
+        throw new Error((data as { error?: string }).error || `${plan.source} 동기화에 실패했습니다.`);
+      }
+
+      const summary = data as DrugCatalogSyncSummary & { ok?: boolean };
       fetchedTotal += Number(summary.fetchedCount || 0);
       upsertedTotal += Number(summary.upsertedCount || 0);
       hasMore = Boolean(summary.hasMore);
