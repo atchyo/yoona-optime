@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
         return jsonResponse({ ok: false, error: "로그인 상태를 확인하지 못했습니다." });
       }
 
-      const { data: memberData, error: memberError } = await adminClient
+      const { data: memberData, error: memberError } = await anonClient
         .from("family_members")
         .select("role")
         .eq("user_id", userData.user.id)
