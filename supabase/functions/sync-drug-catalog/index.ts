@@ -126,7 +126,7 @@ async function syncSource(
     .select("id")
     .single<{ id: string }>();
 
-  if (runError || !runData) throw new Error(runError?.message || "동기화 기록을 만들지 못했습니다.");
+  const runId = runError || !runData ? null : runData.id;
 
   try {
     if (options.reset && options.startPage === 1) {
@@ -144,17 +144,17 @@ async function syncSource(
       if (error) throw new Error(error.message);
     }
 
-    const { error: finishError } = await adminClient
-      .from("drug_catalog_sync_runs")
-      .update({
-        status: "completed",
-        fetched_count: result.fetchedCount,
-        upserted_count: result.rows.length,
-        finished_at: new Date().toISOString(),
-      })
-      .eq("id", runData.id);
-
-    if (finishError) throw new Error(finishError.message);
+    if (runId) {
+      await adminClient
+        .from("drug_catalog_sync_runs")
+        .update({
+          status: "completed",
+          fetched_count: result.fetchedCount,
+          upserted_count: result.rows.length,
+          finished_at: new Date().toISOString(),
+        })
+        .eq("id", runId);
+    }
 
     return {
       source: options.source,
@@ -167,14 +167,16 @@ async function syncSource(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "동기화 중 오류가 발생했습니다.";
-    await adminClient
-      .from("drug_catalog_sync_runs")
-      .update({
-        status: "failed",
-        error_message: message,
-        finished_at: new Date().toISOString(),
-      })
-      .eq("id", runData.id);
+    if (runId) {
+      await adminClient
+        .from("drug_catalog_sync_runs")
+        .update({
+          status: "failed",
+          error_message: message,
+          finished_at: new Date().toISOString(),
+        })
+        .eq("id", runId);
+    }
     throw error;
   }
 }
