@@ -629,11 +629,17 @@ export function App(): ReactElement {
       route={route}
       theme={theme}
       user={user}
+      workspace={familyWorkspace}
     >
       {route === "/" && (
         <DashboardPage
+          careProfiles={displayCareProfiles}
           currentProfile={displayCurrentProfile}
+          familyMembers={familyMembers}
           medications={medications}
+          onNavigateChat={() => navigate("/chat")}
+          onNavigateProfiles={() => navigate("/profiles")}
+          onNavigateReminders={() => navigate("/reminders")}
           onNavigateScan={() => navigate("/scan")}
           scans={scans}
           schedules={medicationSchedules}

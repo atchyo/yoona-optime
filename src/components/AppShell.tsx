@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { ThemeToggle } from "./ThemeToggle";
-import type { CareProfile, DemoUser, FamilyMember, ThemeMode } from "../types";
+import type { CareProfile, DemoUser, FamilyMember, FamilyWorkspace, ThemeMode } from "../types";
 
 export type Route =
   | "/"
@@ -13,14 +13,14 @@ export type Route =
   | "/service-admin"
   | "/login";
 
-const navItems: Array<{ path: Route; label: string; ownerOnly?: boolean; adminOnly?: boolean }> = [
-  { path: "/", label: "대시보드" },
-  { path: "/scan", label: "약 등록" },
-  { path: "/profiles", label: "가족약" },
-  { path: "/reminders", label: "리마인더" },
-  { path: "/chat", label: "상담" },
-  { path: "/family", label: "가족관리", ownerOnly: true },
-  { path: "/service-admin", label: "서비스", adminOnly: true },
+const navItems: Array<{ path: Route; label: string; shortLabel: string; icon: string; ownerOnly?: boolean; adminOnly?: boolean }> = [
+  { path: "/", label: "대시보드", shortLabel: "홈", icon: "D" },
+  { path: "/scan", label: "약 관리", shortLabel: "약관리", icon: "M" },
+  { path: "/profiles", label: "복용 기록", shortLabel: "기록", icon: "R" },
+  { path: "/reminders", label: "복약 알림", shortLabel: "알림", icon: "A" },
+  { path: "/chat", label: "AI 건강 상담", shortLabel: "상담", icon: "C" },
+  { path: "/family", label: "가족 관리", shortLabel: "가족", icon: "F", ownerOnly: true },
+  { path: "/service-admin", label: "서비스 관리", shortLabel: "관리", icon: "S", adminOnly: true },
 ];
 
 const appIconSrc = `${import.meta.env.BASE_URL}opti_me_app_icon.png`;
@@ -36,6 +36,7 @@ interface AppShellProps {
   route: Route;
   theme: ThemeMode;
   familyMembers: FamilyMember[];
+  workspace: FamilyWorkspace;
   user: DemoUser;
 }
 
@@ -50,15 +51,20 @@ export function AppShell({
   onThemeToggle,
   route,
   theme,
+  workspace,
   user,
 }: AppShellProps): ReactElement {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
   const visibleItems = navItems.filter((item) => {
     if (item.adminOnly) return user.role === "admin";
     if (item.ownerOnly) return user.familyRole === "owner" || user.familyRole === "manager";
     return true;
   });
-  const mobileItems = visibleItems.filter((item) => item.path !== "/service-admin");
+  const mobileItems = visibleItems
+    .filter((item) => item.path !== "/service-admin" && item.path !== "/chat")
+    .slice(0, 5);
+  const currentRoute = navItems.find((item) => item.path === route) || navItems[0];
 
   return (
     <div className="app-shell">
@@ -79,24 +85,49 @@ export function AppShell({
               onClick={() => onNavigate(item.path)}
               type="button"
             >
+              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
               {item.label}
             </button>
           ))}
         </nav>
         <div className="sidebar-card">
-          <span className="sidebar-card-label">현재 관리 대상</span>
-          <strong>{currentProfile.name}</strong>
-          <p>우측 상단 이름을 눌러 다른 가족으로 전환할 수 있습니다.</p>
+          <span className="sidebar-card-label">선택된 공간</span>
+          <strong>{workspace.name}</strong>
+          <p>상단에서 가족공간과 관리대상을 따로 선택합니다.</p>
         </div>
       </aside>
 
       <div className="content-shell">
         <header className="topbar">
-          <div>
-            <p className="eyebrow">Family Medication Care</p>
-            <h1>복용 기록을 정리하고, 가족 건강을 함께 확인하세요</h1>
+          <div className="topbar-title">
+            <p className="eyebrow">{currentRoute.label}</p>
+            <h1>{routeTitle(route, user.name)}</h1>
+            <p>{routeSubtitle(route)}</p>
           </div>
           <div className="topbar-actions">
+            <div className="space-switcher">
+              <button
+                aria-expanded={isSpaceMenuOpen}
+                aria-haspopup="listbox"
+                className="workspace-chip"
+                onClick={() => setIsSpaceMenuOpen((current) => !current)}
+                type="button"
+              >
+                <span className="chip-label">공간</span>
+                <strong>{workspace.name}</strong>
+              </button>
+              {isSpaceMenuOpen && (
+                <div aria-label="공간 선택" className="profile-switcher-menu space-switcher-menu" role="listbox">
+                  <button className="profile-option active" role="option" type="button">
+                    <strong>{workspace.name}</strong>
+                    <span>현재 가족공간</span>
+                  </button>
+                  <div className="space-menu-note">
+                    개인공간 전환은 가족초대 수락 구조와 함께 연결됩니다.
+                  </div>
+                </div>
+              )}
+            </div>
             <ThemeToggle onToggle={onThemeToggle} theme={theme} />
             <div className="profile-switcher">
               <button
@@ -108,8 +139,8 @@ export function AppShell({
               >
                 <span>{profileRoleLabel(currentProfile, familyMembers, user)}</span>
                 <div className="profile-switcher-copy">
+                  <small>관리대상</small>
                   <strong>{currentProfile.name}</strong>
-                  <small>{user.name} 계정으로 로그인됨</small>
                 </div>
               </button>
               {isProfileMenuOpen && (
@@ -151,12 +182,34 @@ export function AppShell({
             onClick={() => onNavigate(item.path)}
             type="button"
           >
-            {item.label}
+            <span className="mobile-tab-icon" aria-hidden="true">{item.icon}</span>
+            {item.shortLabel}
           </button>
         ))}
       </nav>
     </div>
   );
+}
+
+function routeTitle(route: Route, userName: string): string {
+  if (route === "/") return `안녕하세요, ${userName}님`;
+  if (route === "/scan") return "약 정보를 등록하고 검색해요";
+  if (route === "/profiles") return "가족 복용 기록을 확인해요";
+  if (route === "/reminders") return "복약 시간을 관리해요";
+  if (route === "/chat") return "등록 약 기준으로 상담을 준비해요";
+  if (route === "/family") return "가족과 반려동물 권한을 관리해요";
+  if (route === "/service-admin") return "서비스 데이터를 관리해요";
+  return "Opti-Me";
+}
+
+function routeSubtitle(route: Route): string {
+  if (route === "/") return "오늘 가족 복용 일정과 주의사항을 한눈에 확인하세요.";
+  if (route === "/scan") return "사진 촬영, 파일 첨부, 약명 검색으로 복용약을 등록합니다.";
+  if (route === "/profiles") return "병원 방문 전 복용약과 성분을 빠르게 확인할 수 있습니다.";
+  if (route === "/reminders") return "정해진 시간과 장기복용 검토일을 놓치지 않게 관리합니다.";
+  if (route === "/chat") return "의료 판단이 아니라 성분 중복과 주의사항 확인을 돕습니다.";
+  if (route === "/family") return "초대와 권한, 반려동물 정보를 한곳에서 정리합니다.";
+  return "가족 건강 관리를 위한 기본 데이터를 확인합니다.";
 }
 
 function profileRoleLabel(
