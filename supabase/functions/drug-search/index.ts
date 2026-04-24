@@ -44,6 +44,8 @@ let healthFunctionalFoodCache:
 const HEALTH_FUNCTIONAL_FOOD_PAGE_SIZE = 100;
 const HEALTH_FUNCTIONAL_FOOD_MAX_PAGES = 25;
 const HEALTH_FUNCTIONAL_FOOD_CACHE_TTL_MS = 1000 * 60 * 30;
+const RESULT_LIMIT = 20;
+const CATALOG_QUERY_LIMIT = 80;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -62,7 +64,7 @@ Deno.serve(async (req) => {
 
   const catalogMatches = await searchCatalog(adminClient, trimmedQuery);
   if (catalogMatches.length >= 8) {
-    return jsonResponse({ matches: catalogMatches.slice(0, 10) });
+    return jsonResponse({ matches: catalogMatches.slice(0, RESULT_LIMIT) });
   }
 
   const mfdsPermitMatches = await searchMfdsPermit(trimmedQuery);
@@ -86,7 +88,7 @@ Deno.serve(async (req) => {
 
   const matches = dedupeMatches([...catalogMatches, ...liveMatches])
     .sort((a, b) => compareMatches(trimmedQuery, a, b))
-    .slice(0, 10);
+    .slice(0, RESULT_LIMIT);
 
   return jsonResponse({ matches });
 });
@@ -97,11 +99,15 @@ async function searchCatalog(
 ): Promise<DrugMatch[]> {
   const rawLike = escapeLikePattern(query);
   const compactLike = escapeLikePattern(normalizeName(query));
+  const tokens = buildSearchTokens(query);
   if (!rawLike && !compactLike) return [];
 
   const filters = [];
   if (rawLike) filters.push(`search_text.ilike.%${rawLike}%`);
   if (compactLike) filters.push(`search_compact.ilike.%${compactLike}%`);
+  tokens.forEach((token) => {
+    filters.push(`search_compact.ilike.%${token}%`);
+  });
   if (!filters.length) return [];
 
   const { data, error } = await adminClient
@@ -110,14 +116,31 @@ async function searchCatalog(
       "source, source_record_id, category, product_name, manufacturer, ingredients, dosage_form, efficacy, usage, warnings, interactions, search_text, search_compact",
     )
     .or(filters.join(","))
-    .limit(30)
+    .limit(CATALOG_QUERY_LIMIT)
     .returns<CatalogSearchRow[]>();
 
   if (error || !data?.length) return [];
 
-  return data
+  const tokenMatchedRows =
+    tokens.length > 1
+      ? data.filter((row) => tokens.every((token) => row.search_compact.includes(token)))
+      : data;
+  const rows = tokenMatchedRows.length ? tokenMatchedRows : data;
+
+  return rows
     .map((row) => toCatalogMatch(query, row))
     .sort((left, right) => compareMatches(query, left, right));
+}
+
+function buildSearchTokens(query: string): string[] {
+  return Array.from(
+    new Set(
+      query
+        .split(/[\s,./()[\]\-_/]+/)
+        .map((token) => normalizeName(token))
+        .filter((token) => token.length >= 2),
+    ),
+  ).slice(0, 6);
 }
 
 function toCatalogMatch(query: string, row: CatalogSearchRow): DrugMatch {
