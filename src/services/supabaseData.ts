@@ -534,6 +534,10 @@ export async function updateRemoteFamilyMember(
   memberId: string,
   patch: Partial<FamilyMember>,
 ): Promise<FamilyMember> {
+  if (!isUuid(memberId)) {
+    throw new Error("가족 데이터가 원격 정보와 맞지 않습니다. 새로고침 후 다시 시도해 주세요.");
+  }
+
   const client = requireSupabase();
   const { data, error } = await client
     .rpc("update_family_member", {
@@ -553,6 +557,10 @@ export async function updateRemoteFamilyMember(
 }
 
 export async function deleteRemoteFamilyMember(memberId: string): Promise<void> {
+  if (!isUuid(memberId)) {
+    throw new Error("가족 데이터가 원격 정보와 맞지 않습니다. 새로고침 후 다시 시도해 주세요.");
+  }
+
   const client = requireSupabase();
   const { error } = await client.rpc("delete_family_member", { member_id: memberId });
   if (error) throw new Error(error.message);
@@ -630,6 +638,10 @@ export async function updateRemoteCareProfile(
   }
 
   return mapCareProfile(data);
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 export async function deleteRemoteCareProfile(profileId: string): Promise<void> {

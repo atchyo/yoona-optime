@@ -68,26 +68,31 @@ const basePath = appConfig.basePath;
 
 export function App(): ReactElement {
   const [theme, setTheme] = useState<ThemeMode>(() => loadTheme());
-  const [user, setUser] = useState<DemoUser | null>(() => loadUser());
+  const [user, setUser] = useState<DemoUser | null>(() => (supabase ? null : loadUser()));
   const [authResolved, setAuthResolved] = useState<boolean>(() => !supabase);
   const [dataResolved, setDataResolved] = useState<boolean>(() => !supabase);
   const [route, setRoute] = useState<Route>(() => getInitialRoute());
   const [familyWorkspace, setFamilyWorkspace] = useState<FamilyWorkspace>(seedWorkspace);
   const [careProfileList, setCareProfileList] = useState<CareProfile[]>(() =>
-    migrateDemoCareProfiles(loadCareProfiles(seedCareProfiles)),
+    supabase ? [] : migrateDemoCareProfiles(loadCareProfiles(seedCareProfiles)),
   );
   const [currentProfileId, setCurrentProfileId] = useState(() =>
     loadCurrentProfileId(seedCareProfiles[0].id),
   );
   const [medications, setMedications] = useState<Medication[]>(() =>
-    loadMedications(seedMedications),
+    supabase ? [] : loadMedications(seedMedications),
   );
   const [temporaryMedications, setTemporaryMedications] = useState<TemporaryMedication[]>(() =>
-    loadTemporaryMedications([]),
+    supabase ? [] : loadTemporaryMedications([]),
   );
-  const [scans, setScans] = useState<OcrScan[]>(() => loadScans([]));
+  const [scans, setScans] = useState<OcrScan[]>(() => (supabase ? [] : loadScans([])));
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(() =>
-    migrateDemoFamilyMembers(loadFamilyMembers(seedFamilyMembers), migrateDemoCareProfiles(loadCareProfiles(seedCareProfiles))),
+    supabase
+      ? []
+      : migrateDemoFamilyMembers(
+          loadFamilyMembers(seedFamilyMembers),
+          migrateDemoCareProfiles(loadCareProfiles(seedCareProfiles)),
+        ),
   );
   const [logs, setLogs] = useState<MedicationLog[]>([]);
 
@@ -436,6 +441,11 @@ export function App(): ReactElement {
 
   async function handleUpdateFamilyMember(memberId: string, patch: Partial<FamilyMember>): Promise<void> {
     if (supabase) {
+      if (!isUuid(memberId)) {
+        await refreshRemoteWorkspace(user);
+        throw new Error("가족 데이터를 최신 상태로 다시 불러왔습니다. 다시 저장해 주세요.");
+      }
+
       const savedMember = await updateRemoteFamilyMember(memberId, patch);
       setFamilyMembers((current) =>
         current.map((member) => (member.id === memberId ? savedMember : member)),
@@ -496,6 +506,11 @@ export function App(): ReactElement {
     if (!targetMember || targetMember.role === "owner") return;
 
     if (supabase) {
+      if (!isUuid(memberId)) {
+        await refreshRemoteWorkspace(user);
+        throw new Error("가족 데이터를 최신 상태로 다시 불러왔습니다. 다시 삭제해 주세요.");
+      }
+
       await deleteRemoteFamilyMember(memberId);
       await refreshRemoteWorkspace(user);
       return;
@@ -793,6 +808,10 @@ function defaultProfileIdForUser(
     nextProfiles[0]?.id ||
     seedCareProfiles[0].id
   );
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 function mapSupabaseUser(user: {
