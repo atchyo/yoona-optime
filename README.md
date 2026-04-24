@@ -61,6 +61,9 @@ npm run sync:drug-catalog -- --source=mfds_permit --pages=20
 npm run sync:drug-catalog -- --source=mfds_easy --pages=20
 ```
 
+The script also loads `.env.sync` and `.env.sync.local` if present. These files
+are gitignored and are meant for local admin secrets only.
+
 Use `--start-page=21` to continue after a partial run. Use `--all-pages` only
 when you are ready to let the job run for a long time:
 

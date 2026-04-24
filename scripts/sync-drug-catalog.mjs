@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { createClient } from "@supabase/supabase-js";
+import { existsSync, readFileSync } from "node:fs";
 
 const SOURCE_ORDER = ["mfds_health", "mfds_permit", "mfds_easy"];
 const DEFAULT_PAGE_SIZE = 100;
@@ -29,6 +30,9 @@ const SOURCE_CONFIGS = {
 };
 
 async function main() {
+  loadLocalEnvFile(".env.sync");
+  loadLocalEnvFile(".env.sync.local");
+
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
     printHelp();
@@ -63,6 +67,29 @@ async function main() {
       source,
       startPage,
     });
+  }
+}
+
+function loadLocalEnvFile(filePath) {
+  if (!existsSync(filePath)) return;
+
+  const lines = readFileSync(filePath, "utf8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    const separatorIndex = trimmed.indexOf("=");
+    if (separatorIndex <= 0) continue;
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    const value = trimmed
+      .slice(separatorIndex + 1)
+      .trim()
+      .replace(/^['"]|['"]$/g, "");
+
+    if (key && process.env[key] === undefined) {
+      process.env[key] = value;
+    }
   }
 }
 

@@ -6,4 +6,6 @@ npm-debug.log*
 vite.config.d.ts
 vite.config.js
 .env.local
+.env.sync
+.env.sync.local
 supabase/.temp
