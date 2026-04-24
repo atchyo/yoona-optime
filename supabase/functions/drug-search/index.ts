@@ -356,11 +356,36 @@ async function loadHealthFunctionalFoodIndex(
     if (!pageItems.length) break;
 
     pageItems.forEach((item: Record<string, string>, index: number) => {
+      const productName = pickText(item, [
+        "PRDUCT",
+        "PRDLST_NM",
+        "PRDLST_NAME",
+        "PRDUCT_NM",
+        "PRODUCT_NM",
+        "ITEM_NAME",
+        "itemName",
+      ]);
+      if (!productName) return;
+
       items.push({
-        id: `mfds_health-${item.STTEMNT_NO || `${pageNo}-${index}`}`,
-        productName: item.PRDUCT || "",
-        manufacturer: item.ENTRPS,
-        statementNo: item.STTEMNT_NO,
+        id: `mfds_health-${
+          pickText(item, [
+            "STTEMNT_NO",
+            "PRDLST_REPORT_NO",
+            "PRDLST_MNF_MANAGE_NO",
+            "GU_PRDLST_MNF_MANAGE_NO",
+            "LCNS_NO",
+          ]) || `${pageNo}-${index}`
+        }`,
+        productName,
+        manufacturer: pickText(item, ["ENTRPS", "BSSH_NM", "ENTP_NM", "ENTP_NAME", "MANUFACTURER"]),
+        statementNo: pickText(item, [
+          "STTEMNT_NO",
+          "PRDLST_REPORT_NO",
+          "PRDLST_MNF_MANAGE_NO",
+          "GU_PRDLST_MNF_MANAGE_NO",
+          "LCNS_NO",
+        ]),
       });
     });
 
@@ -375,4 +400,21 @@ async function loadHealthFunctionalFoodIndex(
   };
 
   return items;
+}
+
+function pickText(item: Record<string, string>, candidates: string[]): string {
+  const entries = Object.entries(item || {});
+  for (const candidate of candidates) {
+    const exactValue = item[candidate];
+    if (exactValue !== undefined && exactValue !== null && String(exactValue).trim()) {
+      return String(exactValue).trim();
+    }
+
+    const normalizedCandidate = candidate.toLowerCase();
+    const matchedEntry = entries.find(([key]) => key.toLowerCase() === normalizedCandidate);
+    if (matchedEntry?.[1] !== undefined && matchedEntry[1] !== null && String(matchedEntry[1]).trim()) {
+      return String(matchedEntry[1]).trim();
+    }
+  }
+  return "";
 }

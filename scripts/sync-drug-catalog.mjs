@@ -190,6 +190,10 @@ async function syncSource(
         .map((item, index) => config.mapRow(item, (pageNo - 1) * pageSize + index))
         .filter(Boolean);
 
+      if (!rows.length) {
+        console.warn(`[${source}] page ${pageNo}: mapped 0 rows. sample keys: ${sampleKeys(items[0])}`);
+      }
+
       if (!dryRun && rows.length) {
         await upsertRows(supabase, rows);
       }
@@ -338,6 +342,27 @@ function parseFunctionalClaims(value) {
     .map((part) => ({ name: part }));
 }
 
+function pickText(item, candidates) {
+  const entries = Object.entries(item || {});
+  for (const candidate of candidates) {
+    const exactValue = item?.[candidate];
+    if (exactValue !== undefined && exactValue !== null && String(exactValue).trim()) {
+      return String(exactValue).trim();
+    }
+
+    const normalizedCandidate = candidate.toLowerCase();
+    const matchedEntry = entries.find(([key]) => key.toLowerCase() === normalizedCandidate);
+    if (matchedEntry?.[1] !== undefined && matchedEntry[1] !== null && String(matchedEntry[1]).trim()) {
+      return String(matchedEntry[1]).trim();
+    }
+  }
+  return "";
+}
+
+function sampleKeys(item) {
+  return Object.keys(item || {}).slice(0, 20).join(", ") || "none";
+}
+
 function buildSearchText({ productName, manufacturer, ingredients, efficacy, usage, warnings, interactions }) {
   return [
     productName,
@@ -394,20 +419,50 @@ function mapEasyRow(item, index) {
 }
 
 function mapHealthRow(item, index) {
-  const productName = item.PRDUCT?.trim();
+  const productName = pickText(item, [
+    "PRDUCT",
+    "PRDLST_NM",
+    "PRDLST_NAME",
+    "PRDUCT_NM",
+    "PRODUCT_NM",
+    "ITEM_NAME",
+    "itemName",
+  ]);
   if (!productName) return null;
+
+  const statementNo = pickText(item, [
+    "STTEMNT_NO",
+    "PRDLST_REPORT_NO",
+    "PRDLST_MNF_MANAGE_NO",
+    "GU_PRDLST_MNF_MANAGE_NO",
+    "LCNS_NO",
+  ]);
+  const manufacturer = pickText(item, ["ENTRPS", "BSSH_NM", "ENTP_NM", "ENTP_NAME", "MANUFACTURER"]);
+  const efficacy = pickText(item, ["MAIN_FNCTN", "PRIMARY_FNCLTY", "FNCLTY_CN", "HF_FNCLTY_MTRAL_CN"]);
+  const usage = pickText(item, ["SRV_USE", "NTK_MTHD", "DAY_INTK_MTHD", "INTAKE_MTHD", "USE_METHOD"]);
+  const standard = pickText(item, ["BASE_STANDARD", "STDR_STND", "STANDARD", "RAWMTRL_NM"]);
+  const dosageForm = pickText(item, ["SUNGSANG", "DISPOS", "SHAP", "DOSAGE_FORM"]);
+  const warning = pickText(item, [
+    "INTAKE_HINT1",
+    "IFTKN_ATNT_MATR_CN",
+    "INTAKE_HINT",
+    "CAUTION",
+    "ATNT_MATR_CN",
+  ]);
+  const storage = pickText(item, ["PRSRV_PD", "CSTDY_MTHD", "STORAGE_METHOD"]);
+  const distribution = pickText(item, ["DISTB_PD", "POG_DAYCNT", "EXPIRATION_DATE"]);
 
   return buildCatalogRow({
     source: "mfds_health",
-    sourceRecordId: item.STTEMNT_NO || `health-${index}`,
+    sourceRecordId: statementNo || `health-${index}`,
     category: "supplement",
     productName,
-    manufacturer: item.ENTRPS?.trim() || null,
-    ingredients: parseFunctionalClaims(item.MAIN_FNCTN || item.BASE_STANDARD || ""),
-    dosageForm: item.SUNGSANG?.trim() || null,
-    efficacy: item.MAIN_FNCTN?.trim() || null,
-    usage: item.SRV_USE?.trim() || null,
-    warnings: compactTextList([item.INTAKE_HINT1, item.PRSRV_PD, item.DISTB_PD]),
+    manufacturer: manufacturer || null,
+    ingredients: parseFunctionalClaims(efficacy || standard),
+    dosageForm: dosageForm || null,
+    efficacy: efficacy || null,
+    usage: usage || null,
+    warnings: compactTextList([warning, storage, distribution]),
     interactions: [],
     payload: item,
   });
