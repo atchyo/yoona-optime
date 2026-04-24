@@ -291,9 +291,18 @@ function safeDecode(value) {
 
 function normalizeItems(items) {
   if (!items) return [];
-  if (Array.isArray(items)) return items;
-  if (Array.isArray(items.item)) return items.item;
-  if (items.item) return [items.item];
+  if (Array.isArray(items)) return items.flatMap((item) => normalizeItemEntry(item));
+  if (Array.isArray(items.item)) return items.item.flatMap((item) => normalizeItemEntry(item));
+  if (items.item) return normalizeItemEntry(items.item);
+  if (typeof items === "object") return [items];
+  return [];
+}
+
+function normalizeItemEntry(item) {
+  if (!item) return [];
+  if (Array.isArray(item)) return item.flatMap((entry) => normalizeItemEntry(entry));
+  if (typeof item === "object" && item.item) return normalizeItems(item.item);
+  if (typeof item === "object") return [item];
   return [];
 }
 

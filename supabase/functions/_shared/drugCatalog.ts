@@ -69,13 +69,25 @@ export function parseFunctionalClaims(value: string): Array<{ name: string; amou
 
 export function normalizeItems(items: unknown): Array<Record<string, string>> {
   if (!items) return [];
-  if (Array.isArray(items)) return items as Array<Record<string, string>>;
+  if (Array.isArray(items)) {
+    return items.flatMap((item) => normalizeItemEntry(item));
+  }
   if (Array.isArray((items as { item?: unknown[] }).item)) {
-    return (items as { item: Array<Record<string, string>> }).item;
+    return (items as { item: unknown[] }).item.flatMap((item) => normalizeItemEntry(item));
   }
   if ((items as { item?: unknown }).item) {
-    return [(items as { item: Record<string, string> }).item];
+    return normalizeItemEntry((items as { item: unknown }).item);
   }
+  return [items as Record<string, string>];
+}
+
+function normalizeItemEntry(item: unknown): Array<Record<string, string>> {
+  if (!item) return [];
+  if (Array.isArray(item)) return item.flatMap((entry) => normalizeItemEntry(entry));
+  if (typeof item === "object" && (item as { item?: unknown }).item) {
+    return normalizeItems((item as { item: unknown }).item);
+  }
+  if (typeof item === "object") return [item as Record<string, string>];
   return [];
 }
 
