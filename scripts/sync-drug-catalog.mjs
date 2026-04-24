@@ -213,12 +213,18 @@ async function syncSource(
       }
 
       totalCount = extractTotalCount(payload) || totalCount;
-      const rows = items
+      const mappedRows = items
         .map((item, index) => config.mapRow(item, (pageNo - 1) * pageSize + index))
         .filter(Boolean);
+      const rows = dedupeCatalogRows(mappedRows);
 
       if (!rows.length) {
         console.warn(`[${source}] page ${pageNo}: mapped 0 rows. sample keys: ${sampleKeys(items[0])}`);
+      }
+      if (mappedRows.length > rows.length) {
+        console.warn(
+          `[${source}] page ${pageNo}: removed ${mappedRows.length - rows.length} duplicate catalog rows`,
+        );
       }
 
       if (!dryRun && rows.length) {
@@ -281,6 +287,17 @@ async function upsertRows(supabase, rows) {
       .upsert(chunk, { onConflict: "source,source_record_id" });
     if (error) throw new Error(error.message);
   }
+}
+
+function dedupeCatalogRows(rows) {
+  return Array.from(
+    rows
+      .reduce((seen, row) => {
+        seen.set(`${row.source}:${row.source_record_id}`, row);
+        return seen;
+      }, new Map())
+      .values(),
+  );
 }
 
 async function fetchDataGoKrJson(baseUrl, serviceKeyName, serviceKey, params) {

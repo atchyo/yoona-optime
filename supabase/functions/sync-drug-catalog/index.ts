@@ -135,7 +135,8 @@ async function syncSource(
     }
 
     const result = await fetchCatalogRows(options);
-    const chunks = chunkRows(result.rows, 200);
+    const rows = dedupeCatalogRows(result.rows);
+    const chunks = chunkRows(rows, 200);
 
     for (const chunk of chunks) {
       const { error } = await adminClient
@@ -150,7 +151,7 @@ async function syncSource(
         .update({
           status: "completed",
           fetched_count: result.fetchedCount,
-          upserted_count: result.rows.length,
+          upserted_count: rows.length,
           finished_at: new Date().toISOString(),
         })
         .eq("id", runId);
@@ -159,7 +160,7 @@ async function syncSource(
     return {
       source: options.source,
       fetchedCount: result.fetchedCount,
-      upsertedCount: result.rows.length,
+      upsertedCount: rows.length,
       startPage: options.startPage,
       nextPage: result.nextPage,
       hasMore: result.hasMore,
@@ -458,4 +459,15 @@ function chunkRows(rows: DrugCatalogRow[], size: number): DrugCatalogRow[][] {
     chunks.push(rows.slice(index, index + size));
   }
   return chunks;
+}
+
+function dedupeCatalogRows(rows: DrugCatalogRow[]): DrugCatalogRow[] {
+  return Array.from(
+    rows
+      .reduce((seen, row) => {
+        seen.set(`${row.source}:${row.source_record_id}`, row);
+        return seen;
+      }, new Map<string, DrugCatalogRow>())
+      .values(),
+  );
 }
