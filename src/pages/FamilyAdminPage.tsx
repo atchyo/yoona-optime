@@ -18,6 +18,7 @@ interface FamilyAdminPageProps {
   onAddMember: (member: Pick<FamilyMember, "displayName" | "email" | "role">) => Promise<void> | void;
   onAddCareProfile: (profile: CareProfile) => Promise<void> | void;
   onDeleteCareProfile: (profileId: string) => Promise<void> | void;
+  onDeleteMember: (memberId: string) => Promise<void> | void;
   onUpdateCareProfile: (profileId: string, patch: Partial<CareProfile>) => Promise<void> | void;
   onUpdateMember: (memberId: string, patch: Partial<FamilyMember>) => Promise<void> | void;
   scans: OcrScan[];
@@ -34,6 +35,7 @@ export function FamilyAdminPage({
   onAddMember,
   onAddCareProfile,
   onDeleteCareProfile,
+  onDeleteMember,
   onUpdateCareProfile,
   onUpdateMember,
   scans,
@@ -69,6 +71,7 @@ export function FamilyAdminPage({
     role: "member" as FamilyRole,
   });
   const [memberSaveNote, setMemberSaveNote] = useState("");
+  const [deletingMemberId, setDeletingMemberId] = useState("");
 
   useEffect(() => {
     setDraftMembers(familyMembers);
@@ -102,6 +105,7 @@ export function FamilyAdminPage({
   }
 
   async function saveMember(member: FamilyMember): Promise<void> {
+    setMemberSaveNote("");
     try {
       await onUpdateMember(member.id, {
         displayName: member.displayName,
@@ -110,8 +114,32 @@ export function FamilyAdminPage({
         accessibleProfileIds: normalizedAccessibleProfileIds(member, careProfiles),
       });
       setSavedMemberId(member.id);
+      setMemberSaveNote(`${member.displayName} 저장 완료`);
     } catch (error) {
-      setPetSaveNote(error instanceof Error ? error.message : "가족 구성원 저장 중 문제가 발생했습니다.");
+      setMemberSaveNote(error instanceof Error ? error.message : "가족 구성원 저장 중 문제가 발생했습니다.");
+    }
+  }
+
+  async function deleteFamilyMember(member: FamilyMember): Promise<void> {
+    if (member.role === "owner") {
+      setMemberSaveNote("가족대표는 삭제할 수 없습니다.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `${member.displayName} 구성원을 삭제할까요?\n연결된 관리대상과 등록된 약 기록도 함께 삭제됩니다.`,
+    );
+    if (!confirmed) return;
+
+    setMemberSaveNote("");
+    setDeletingMemberId(member.id);
+    try {
+      await onDeleteMember(member.id);
+      setMemberSaveNote(`${member.displayName} 삭제 완료`);
+    } catch (error) {
+      setMemberSaveNote(error instanceof Error ? error.message : "가족 구성원 삭제 중 문제가 발생했습니다.");
+    } finally {
+      setDeletingMemberId("");
     }
   }
 
@@ -410,13 +438,25 @@ export function FamilyAdminPage({
                   <strong>{member.displayName}</strong>
                   <span>{roleLabel(member.role)}</span>
                 </div>
-                <button
-                  className={savedMemberId === member.id ? "primary-button table-action is-saved" : "primary-button table-action"}
-                  onClick={() => saveMember(member)}
-                  type="button"
-                >
-                  저장
-                </button>
+                <div className="member-row-actions">
+                  <button
+                    className={savedMemberId === member.id ? "primary-button table-action is-saved" : "primary-button table-action"}
+                    onClick={() => saveMember(member)}
+                    type="button"
+                  >
+                    저장
+                  </button>
+                  {member.role !== "owner" && (
+                    <button
+                      className="danger-button table-action"
+                      disabled={deletingMemberId === member.id}
+                      onClick={() => deleteFamilyMember(member)}
+                      type="button"
+                    >
+                      {deletingMemberId === member.id ? "삭제 중" : "삭제"}
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="member-edit-fields">
                 <label>

@@ -535,33 +535,27 @@ export async function updateRemoteFamilyMember(
   patch: Partial<FamilyMember>,
 ): Promise<FamilyMember> {
   const client = requireSupabase();
-  const nextPatch: Record<string, unknown> = {};
-
-  if (patch.displayName !== undefined) nextPatch.display_name = patch.displayName;
-  if (patch.email !== undefined) nextPatch.email = patch.email || null;
-  if (patch.role !== undefined) nextPatch.role = patch.role;
-  if (patch.accessibleProfileIds !== undefined) {
-    nextPatch.accessible_profile_ids = patch.accessibleProfileIds;
-  }
-
   const { data, error } = await client
-    .from("family_members")
-    .update(nextPatch)
-    .eq("id", memberId)
-    .select("id, workspace_id, user_id, role, display_name, email, accessible_profile_ids, care_profile_id")
+    .rpc("update_family_member", {
+      member_id: memberId,
+      next_display_name: patch.displayName ?? null,
+      next_email: patch.email ?? null,
+      next_role: patch.role ?? null,
+      next_accessible_profile_ids: patch.accessibleProfileIds ?? null,
+    })
     .single<FamilyMemberRow>();
 
   if (error || !data) {
     throw new Error(error?.message || "가족 구성원 정보를 저장하지 못했습니다.");
   }
 
-  const member = mapFamilyMember(data);
+  return mapFamilyMember(data);
+}
 
-  if (member.careProfileId && patch.displayName !== undefined) {
-    await client.from("care_profiles").update({ name: patch.displayName }).eq("id", member.careProfileId);
-  }
-
-  return member;
+export async function deleteRemoteFamilyMember(memberId: string): Promise<void> {
+  const client = requireSupabase();
+  const { error } = await client.rpc("delete_family_member", { member_id: memberId });
+  if (error) throw new Error(error.message);
 }
 
 export async function createRemoteFamilyMember(args: {

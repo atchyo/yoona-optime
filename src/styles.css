@@ -1460,12 +1460,14 @@ td select {
   animation: collapsible-reveal 220ms ease-out;
 }
 
+.member-row-actions,
 .pet-row-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+.member-row-actions .table-action,
 .pet-row-actions .pet-toggle-button,
 .pet-row-actions .danger-button {
   min-width: 76px;
@@ -1786,7 +1788,8 @@ td select {
     flex-direction: column;
   }
 
-  .member-edit-head .table-action,
+  .member-row-actions,
+  .member-row-actions .table-action,
   .split-heading button,
   .catalog-sync-actions,
   .catalog-sync-actions button,
@@ -1795,6 +1798,7 @@ td select {
     width: 100%;
   }
 
+  .member-row-actions,
   .pet-row-actions {
     align-items: stretch;
     flex-direction: column;

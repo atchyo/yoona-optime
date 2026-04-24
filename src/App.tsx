@@ -23,6 +23,7 @@ import {
   createRemoteCareProfile,
   createRemoteFamilyMember,
   deleteRemoteCareProfile,
+  deleteRemoteFamilyMember,
   deleteRemoteMedication,
   loadRemoteAppData,
   saveConfirmedMedication,
@@ -439,6 +440,7 @@ export function App(): ReactElement {
       setFamilyMembers((current) =>
         current.map((member) => (member.id === memberId ? savedMember : member)),
       );
+      await refreshRemoteWorkspace(user);
       return;
     }
 
@@ -487,6 +489,35 @@ export function App(): ReactElement {
 
     setFamilyMembers((current) => [...current, nextMember]);
     setCareProfileList((current) => [...current, nextProfile]);
+  }
+
+  async function handleDeleteFamilyMember(memberId: string): Promise<void> {
+    const targetMember = familyMembers.find((member) => member.id === memberId);
+    if (!targetMember || targetMember.role === "owner") return;
+
+    if (supabase) {
+      await deleteRemoteFamilyMember(memberId);
+      await refreshRemoteWorkspace(user);
+      return;
+    }
+
+    setFamilyMembers((current) => current.filter((member) => member.id !== memberId));
+
+    if (targetMember.careProfileId) {
+      setCareProfileList((current) => current.filter((profile) => profile.id !== targetMember.careProfileId));
+      setMedications((current) =>
+        current.filter((medication) => medication.careProfileId !== targetMember.careProfileId),
+      );
+      setTemporaryMedications((current) =>
+        current.filter((medication) => medication.careProfileId !== targetMember.careProfileId),
+      );
+      setScans((current) => current.filter((scan) => scan.careProfileId !== targetMember.careProfileId));
+
+      if (currentProfileId === targetMember.careProfileId) {
+        const nextProfileId = defaultProfileIdForUser(careProfileList, user, targetMember.careProfileId);
+        handleProfileChange(nextProfileId);
+      }
+    }
   }
 
   async function handleAddCareProfile(profile: CareProfile): Promise<void> {
@@ -631,6 +662,7 @@ export function App(): ReactElement {
           onAddMember={handleAddFamilyMember}
           onAddCareProfile={handleAddCareProfile}
           onDeleteCareProfile={handleDeleteCareProfile}
+          onDeleteMember={handleDeleteFamilyMember}
           onUpdateCareProfile={handleUpdateCareProfile}
           onUpdateMember={handleUpdateFamilyMember}
           scans={scans}
