@@ -20,15 +20,18 @@ import { ServiceAdminPage } from "./pages/ServiceAdminPage";
 import { appConfig } from "./config";
 import {
   acceptRemoteFamilyInvitation,
+  createRemoteMedicationLog,
   createRemoteCareProfile,
   createRemoteFamilyInvitation,
   deleteRemoteCareProfile,
   deleteRemoteFamilyMember,
   deleteRemoteMedication,
+  deleteRemoteMedicationSchedule,
   declineRemoteFamilyInvitation,
   loadRemoteAppData,
   revokeRemoteFamilyInvitation,
   saveConfirmedMedication,
+  saveRemoteMedicationSchedule,
   saveTemporaryMedication,
   updateRemoteCareProfile,
   updateRemoteFamilyMember,
@@ -41,6 +44,8 @@ import {
   loadActiveWorkspaceId,
   loadCurrentProfileId,
   loadFamilyMembers,
+  loadMedicationLogs,
+  loadMedicationSchedules,
   loadMedications,
   loadScans,
   loadTemporaryMedications,
@@ -50,6 +55,8 @@ import {
   saveActiveWorkspaceId,
   saveCurrentProfileId,
   saveFamilyMembers,
+  saveMedicationLogs,
+  saveMedicationSchedules,
   saveMedications,
   saveScans,
   saveTemporaryMedications,
@@ -64,6 +71,7 @@ import type {
   FamilyWorkspace,
   Medication,
   MedicationLog,
+  MedicationSchedule,
   OcrScan,
   TemporaryMedication,
   ThemeMode,
@@ -88,6 +96,9 @@ export function App(): ReactElement {
   const [medications, setMedications] = useState<Medication[]>(() =>
     supabase ? [] : loadMedications(seedMedications),
   );
+  const [schedules, setSchedules] = useState<MedicationSchedule[]>(() =>
+    supabase ? [] : loadMedicationSchedules(medicationSchedules),
+  );
   const [temporaryMedications, setTemporaryMedications] = useState<TemporaryMedication[]>(() =>
     supabase ? [] : loadTemporaryMedications([]),
   );
@@ -101,7 +112,9 @@ export function App(): ReactElement {
         ),
   );
   const [familyInvitations, setFamilyInvitations] = useState<FamilyInvitation[]>([]);
-  const [logs, setLogs] = useState<MedicationLog[]>([]);
+  const [logs, setLogs] = useState<MedicationLog[]>(() =>
+    supabase ? [] : loadMedicationLogs([]),
+  );
 
   const currentProfile = useMemo(
     () =>
@@ -128,6 +141,10 @@ export function App(): ReactElement {
     () => displayProfileForUser(currentProfile, user, familyMembers),
     [currentProfile, familyMembers, user],
   );
+  const effectiveSchedules = useMemo(
+    () => mergeDerivedMedicationSchedules(medications, schedules),
+    [medications, schedules],
+  );
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     saveTheme(theme);
@@ -136,6 +153,14 @@ export function App(): ReactElement {
   useEffect(() => {
     if (!supabase) saveMedications(medications);
   }, [medications]);
+
+  useEffect(() => {
+    if (!supabase) saveMedicationSchedules(schedules);
+  }, [schedules]);
+
+  useEffect(() => {
+    if (!supabase) saveMedicationLogs(logs);
+  }, [logs]);
 
   useEffect(() => {
     if (!supabase) saveCareProfiles(careProfileList);
@@ -276,6 +301,8 @@ export function App(): ReactElement {
     setFamilyInvitations(remoteData.familyInvitations);
     setCareProfileList(remoteData.careProfiles);
     setMedications(remoteData.medications);
+    setLogs(remoteData.medicationLogs);
+    setSchedules(remoteData.medicationSchedules);
     setTemporaryMedications(remoteData.temporaryMedications);
     setScans(remoteData.scans);
     setUser(remoteData.resolvedUser);
@@ -436,11 +463,19 @@ export function App(): ReactElement {
     }
 
     setMedications((current) => current.filter((medication) => medication.id !== medicationId));
+    setSchedules((current) => current.filter((schedule) => schedule.medicationId !== medicationId));
+    setLogs((current) => current.filter((log) => log.medicationId !== medicationId));
   }
 
-  function handleMarkTaken(scheduleId: string): void {
-    const schedule = medicationSchedules.find((item) => item.id === scheduleId);
-    if (!schedule) return;
+  async function handleMarkTaken(schedule: MedicationSchedule): Promise<void> {
+    if (supabase) {
+      const savedLog = await createRemoteMedicationLog({
+        medicationId: schedule.medicationId,
+        scheduleId: schedule.id,
+      });
+      setLogs((current) => [savedLog, ...current]);
+      return;
+    }
 
     setLogs((current) => [
       {
@@ -451,6 +486,25 @@ export function App(): ReactElement {
       },
       ...current,
     ]);
+  }
+
+  async function handleSaveMedicationSchedule(schedule: MedicationSchedule): Promise<void> {
+    const savedSchedule = supabase
+      ? await saveRemoteMedicationSchedule(schedule)
+      : { ...schedule, id: schedule.id || crypto.randomUUID() };
+
+    setSchedules((current) => [
+      savedSchedule,
+      ...current.filter((item) => item.id !== schedule.id && item.medicationId !== savedSchedule.medicationId),
+    ]);
+  }
+
+  async function handleDeleteMedicationSchedule(scheduleId: string): Promise<void> {
+    if (supabase) {
+      await deleteRemoteMedicationSchedule(scheduleId);
+    }
+
+    setSchedules((current) => current.filter((schedule) => schedule.id !== scheduleId));
   }
 
   async function handleUpdateFamilyMember(memberId: string, patch: Partial<FamilyMember>): Promise<void> {
@@ -533,9 +587,18 @@ export function App(): ReactElement {
     setFamilyMembers((current) => current.filter((member) => member.id !== memberId));
 
     if (targetMember.careProfileId) {
+      const removedMedicationIds = medications
+        .filter((medication) => medication.careProfileId === targetMember.careProfileId)
+        .map((medication) => medication.id);
       setCareProfileList((current) => current.filter((profile) => profile.id !== targetMember.careProfileId));
       setMedications((current) =>
         current.filter((medication) => medication.careProfileId !== targetMember.careProfileId),
+      );
+      setSchedules((current) =>
+        current.filter((schedule) => !removedMedicationIds.includes(schedule.medicationId)),
+      );
+      setLogs((current) =>
+        current.filter((log) => !removedMedicationIds.includes(log.medicationId)),
       );
       setTemporaryMedications((current) =>
         current.filter((medication) => medication.careProfileId !== targetMember.careProfileId),
@@ -611,8 +674,17 @@ export function App(): ReactElement {
       await deleteRemoteCareProfile(profileId);
     }
 
+    const removedMedicationIds = medications
+      .filter((medication) => medication.careProfileId === profileId)
+      .map((medication) => medication.id);
     setCareProfileList((current) => current.filter((profile) => profile.id !== profileId));
     setMedications((current) => current.filter((medication) => medication.careProfileId !== profileId));
+    setSchedules((current) =>
+      current.filter((schedule) => !removedMedicationIds.includes(schedule.medicationId)),
+    );
+    setLogs((current) =>
+      current.filter((log) => !removedMedicationIds.includes(log.medicationId)),
+    );
     setTemporaryMedications((current) =>
       current.filter((medication) => medication.careProfileId !== profileId),
     );
@@ -692,7 +764,7 @@ export function App(): ReactElement {
           onNavigateReminders={() => navigate("/reminders")}
           onNavigateScan={() => navigate("/scan")}
           scans={scans}
-          schedules={medicationSchedules}
+          schedules={effectiveSchedules}
         />
       )}
       {route === "/scan" && (
@@ -712,16 +784,19 @@ export function App(): ReactElement {
           familyMembers={familyMembers}
           medications={medications}
           onDeleteMedication={handleDeleteMedication}
-          schedules={medicationSchedules}
+          schedules={effectiveSchedules}
           temporaryMedications={temporaryMedications}
         />
       )}
       {route === "/reminders" && (
         <RemindersPage
           currentProfile={displayCurrentProfile}
+          logs={logs}
           medications={medications}
+          onDeleteSchedule={handleDeleteMedicationSchedule}
           onMarkTaken={handleMarkTaken}
-          schedules={medicationSchedules}
+          onSaveSchedule={handleSaveMedicationSchedule}
+          schedules={schedules}
         />
       )}
       {route === "/chat" && (
@@ -916,6 +991,42 @@ function defaultProfileIdForUser(
     nextProfiles[0]?.id ||
     seedCareProfiles[0].id
   );
+}
+
+function mergeDerivedMedicationSchedules(
+  medications: Medication[],
+  schedules: MedicationSchedule[],
+): MedicationSchedule[] {
+  const scheduledMedicationIds = new Set(schedules.map((schedule) => schedule.medicationId));
+  const derivedSchedules = medications
+    .filter((medication) => !scheduledMedicationIds.has(medication.id))
+    .map((medication) => buildDerivedMedicationSchedule(medication));
+
+  return [...schedules, ...derivedSchedules];
+}
+
+function buildDerivedMedicationSchedule(medication: Medication): MedicationSchedule {
+  return {
+    id: `derived-${medication.id}`,
+    medicationId: medication.id,
+    type: "daily",
+    label: medication.instructions || "복용 주기 미설정",
+    timeOfDay: "08:00",
+    nextDueAt: nextDueAtForTime("08:00"),
+    reviewAt: medication.reviewAt,
+  };
+}
+
+function nextDueAtForTime(timeOfDay: string): string {
+  const [rawHours, rawMinutes] = timeOfDay.split(":");
+  const hours = Number(rawHours);
+  const minutes = Number(rawMinutes);
+  const next = new Date();
+  next.setHours(Number.isFinite(hours) ? hours : 8, Number.isFinite(minutes) ? minutes : 0, 0, 0);
+  if (next.getTime() < Date.now()) {
+    next.setDate(next.getDate() + 1);
+  }
+  return next.toISOString();
 }
 
 function isUuid(value: string): boolean {

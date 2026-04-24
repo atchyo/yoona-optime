@@ -1138,6 +1138,30 @@ textarea {
   color: var(--color-muted);
 }
 
+.editable-reminder-row {
+  grid-template-columns: 124px minmax(180px, 1fr) minmax(190px, 0.9fr) minmax(220px, auto);
+}
+
+.editable-reminder-row input {
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+.reminder-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+}
+
+.reminder-actions button {
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.reminder-actions .danger-button {
+  min-width: 62px;
+}
+
 .empty-panel {
   border: 1px dashed var(--color-border);
   border-radius: var(--radius);
@@ -2667,12 +2691,22 @@ td select {
     grid-template-columns: 72px minmax(0, 1fr);
   }
 
+  .editable-reminder-row {
+    grid-template-columns: 1fr;
+  }
+
   .reminder-table-row > span,
-  .reminder-table-row > button {
+  .reminder-table-row > button,
+  .reminder-actions {
     grid-column: 1 / -1;
   }
 
+  .reminder-actions {
+    grid-template-columns: 1fr;
+  }
+
   .reminder-table-row > button,
+  .reminder-actions button,
   .chat-input-row > button {
     width: 100%;
   }

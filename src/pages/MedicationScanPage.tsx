@@ -57,6 +57,12 @@ export function MedicationScanPage({
   }, [careProfiles, selectedProfileId]);
 
   useEffect(() => {
+    if (careProfiles.some((profile) => profile.id === currentProfile.id)) {
+      setSelectedProfileId(currentProfile.id);
+    }
+  }, [careProfiles, currentProfile.id]);
+
+  useEffect(() => {
     if (videoRef.current && cameraStream) {
       videoRef.current.srcObject = cameraStream;
     }

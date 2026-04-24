@@ -13,7 +13,7 @@ export const supabase = isSupabaseConfigured
 
 export async function signInWithProvider(provider: "google" | "kakao"): Promise<void> {
   if (!supabase) {
-    throw new Error("Supabase is not configured. Use demo login or add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+    throw new Error("로그인 설정이 준비되지 않았습니다. Supabase URL과 publishable key를 확인해 주세요.");
   }
 
   const redirectTo = `${window.location.origin}${appConfig.basePath || ""}/`;

@@ -8,7 +8,9 @@ import type {
   FamilyRole,
   FamilyWorkspace,
   Medication,
+  MedicationLog,
   MedicationPhoto,
+  MedicationSchedule,
   OcrScan,
   TemporaryMedication,
 } from "../types";
@@ -89,6 +91,25 @@ interface TemporaryMedicationRow {
   created_at: string;
 }
 
+interface MedicationScheduleRow {
+  id: string;
+  medication_id: string;
+  type: MedicationSchedule["type"];
+  label: string;
+  time_of_day: string;
+  days_of_week: string[] | null;
+  next_due_at: string;
+  review_at: string | null;
+}
+
+interface MedicationLogRow {
+  id: string;
+  medication_id: string;
+  schedule_id: string | null;
+  taken_at: string;
+  note: string | null;
+}
+
 interface OcrScanRow {
   id: string;
   workspace_id: string;
@@ -131,6 +152,8 @@ export interface RemoteAppData {
   familyInvitations: FamilyInvitation[];
   careProfiles: CareProfile[];
   medications: Medication[];
+  medicationLogs: MedicationLog[];
+  medicationSchedules: MedicationSchedule[];
   temporaryMedications: TemporaryMedication[];
   scans: OcrScan[];
   resolvedUser: DemoUser;
@@ -243,6 +266,29 @@ function mapTemporaryMedication(row: TemporaryMedicationRow): TemporaryMedicatio
     rawText: row.raw_text,
     note: row.note || undefined,
     createdAt: row.created_at,
+  };
+}
+
+function mapMedicationSchedule(row: MedicationScheduleRow): MedicationSchedule {
+  return {
+    id: row.id,
+    medicationId: row.medication_id,
+    type: row.type,
+    label: row.label,
+    timeOfDay: normalizeTime(row.time_of_day),
+    daysOfWeek: row.days_of_week || undefined,
+    nextDueAt: row.next_due_at,
+    reviewAt: row.review_at || undefined,
+  };
+}
+
+function mapMedicationLog(row: MedicationLogRow): MedicationLog {
+  return {
+    id: row.id,
+    medicationId: row.medication_id,
+    scheduleId: row.schedule_id || "",
+    takenAt: row.taken_at,
+    note: row.note || undefined,
   };
 }
 
@@ -389,6 +435,9 @@ export async function loadRemoteAppData(
   const medications = (medicationResponse.data || []).map(mapMedication);
   const temporaryMedications = (temporaryMedicationResponse.data || []).map(mapTemporaryMedication);
   const scans = scanResponse.data || [];
+  const medicationIds = medications.map((medication) => medication.id);
+  let medicationSchedules: MedicationSchedule[] = [];
+  let medicationLogs: MedicationLog[] = [];
 
   const scanIds = scans.map((scan) => scan.id);
   let photosByScanId = new Map<string, MedicationPhoto>();
@@ -423,6 +472,30 @@ export async function loadRemoteAppData(
     }, new Map<string, DrugDatabaseMatch[]>());
   }
 
+  if (medicationIds.length) {
+    const [scheduleResponse, logResponse] = await Promise.all([
+      client
+        .from("medication_schedules")
+        .select("id, medication_id, type, label, time_of_day, days_of_week, next_due_at, review_at")
+        .in("medication_id", medicationIds)
+        .order("time_of_day", { ascending: true })
+        .returns<MedicationScheduleRow[]>(),
+      client
+        .from("medication_logs")
+        .select("id, medication_id, schedule_id, taken_at, note")
+        .in("medication_id", medicationIds)
+        .order("taken_at", { ascending: false })
+        .limit(100)
+        .returns<MedicationLogRow[]>(),
+    ]);
+
+    if (scheduleResponse.error) throw new Error(scheduleResponse.error.message);
+    if (logResponse.error) throw new Error(logResponse.error.message);
+
+    medicationSchedules = (scheduleResponse.data || []).map(mapMedicationSchedule);
+    medicationLogs = (logResponse.data || []).map(mapMedicationLog);
+  }
+
   const resolvedUserProfile = userProfileResponse.data;
   const currentMember = familyMembers.find((member) => member.userId === authUser.id);
   const resolvedUser: DemoUser = {
@@ -439,6 +512,8 @@ export async function loadRemoteAppData(
     familyInvitations,
     careProfiles,
     medications,
+    medicationLogs,
+    medicationSchedules,
     temporaryMedications,
     scans: scans.map((scan) => mapScan(scan, photosByScanId, matchesByScanId)),
     resolvedUser,
@@ -675,6 +750,68 @@ export async function deleteRemoteMedication(medicationId: string): Promise<void
   if (error) throw new Error(error.message);
 }
 
+export async function saveRemoteMedicationSchedule(
+  schedule: MedicationSchedule,
+): Promise<MedicationSchedule> {
+  const client = requireSupabase();
+  const payload = {
+    medication_id: schedule.medicationId,
+    type: schedule.type,
+    label: schedule.label,
+    time_of_day: schedule.timeOfDay,
+    days_of_week: schedule.daysOfWeek || null,
+    next_due_at: schedule.nextDueAt,
+    review_at: schedule.reviewAt || null,
+  };
+
+  const query = isUuid(schedule.id)
+    ? client.from("medication_schedules").update(payload).eq("id", schedule.id)
+    : client.from("medication_schedules").insert(payload);
+
+  const { data, error } = await query
+    .select("id, medication_id, type, label, time_of_day, days_of_week, next_due_at, review_at")
+    .single<MedicationScheduleRow>();
+
+  if (error || !data) {
+    throw new Error(error?.message || "복약 알림을 저장하지 못했습니다.");
+  }
+
+  return mapMedicationSchedule(data);
+}
+
+export async function deleteRemoteMedicationSchedule(scheduleId: string): Promise<void> {
+  if (!isUuid(scheduleId)) return;
+
+  const client = requireSupabase();
+  const { error } = await client.from("medication_schedules").delete().eq("id", scheduleId);
+  if (error) throw new Error(error.message);
+}
+
+export async function createRemoteMedicationLog(args: {
+  medicationId: string;
+  note?: string;
+  scheduleId?: string;
+}): Promise<MedicationLog> {
+  const client = requireSupabase();
+  const authUser = await requireAuthenticatedUser();
+  const { data, error } = await client
+    .from("medication_logs")
+    .insert({
+      medication_id: args.medicationId,
+      schedule_id: args.scheduleId && isUuid(args.scheduleId) ? args.scheduleId : null,
+      note: args.note || null,
+      created_by: authUser.id,
+    })
+    .select("id, medication_id, schedule_id, taken_at, note")
+    .single<MedicationLogRow>();
+
+  if (error || !data) {
+    throw new Error(error?.message || "복용 완료 기록을 저장하지 못했습니다.");
+  }
+
+  return mapMedicationLog(data);
+}
+
 export async function updateRemoteFamilyMember(
   memberId: string,
   patch: Partial<FamilyMember>,
@@ -822,4 +959,8 @@ export async function deleteRemoteCareProfile(profileId: string): Promise<void> 
   const client = requireSupabase();
   const { error } = await client.from("care_profiles").delete().eq("id", profileId);
   if (error) throw new Error(error.message);
+}
+
+function normalizeTime(value: string): string {
+  return String(value || "08:00").slice(0, 5);
 }

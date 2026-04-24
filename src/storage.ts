@@ -2,7 +2,9 @@ import type {
   CareProfile,
   DemoUser,
   FamilyMember,
+  MedicationLog,
   Medication,
+  MedicationSchedule,
   OcrScan,
   TemporaryMedication,
   ThemeMode,
@@ -14,6 +16,8 @@ export const storageKeys = {
   activeWorkspace: "optime.activeWorkspace",
   currentProfile: "optime.currentProfile",
   medications: "optime.medications",
+  medicationLogs: "optime.medicationLogs",
+  medicationSchedules: "optime.medicationSchedules",
   temporaryMedications: "optime.temporaryMedications",
   scans: "optime.ocrScans",
   familyMembers: "optime.familyMembers",
@@ -91,6 +95,22 @@ export function loadMedications(fallback: Medication[]): Medication[] {
 
 export function saveMedications(medications: Medication[]): void {
   saveJson(storageKeys.medications, medications);
+}
+
+export function loadMedicationSchedules(fallback: MedicationSchedule[]): MedicationSchedule[] {
+  return loadJson(storageKeys.medicationSchedules, fallback);
+}
+
+export function saveMedicationSchedules(schedules: MedicationSchedule[]): void {
+  saveJson(storageKeys.medicationSchedules, schedules);
+}
+
+export function loadMedicationLogs(fallback: MedicationLog[]): MedicationLog[] {
+  return loadJson(storageKeys.medicationLogs, fallback);
+}
+
+export function saveMedicationLogs(logs: MedicationLog[]): void {
+  saveJson(storageKeys.medicationLogs, logs);
 }
 
 export function loadTemporaryMedications(fallback: TemporaryMedication[]): TemporaryMedication[] {

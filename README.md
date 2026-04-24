@@ -1,10 +1,10 @@
 # yoona-optime
 
-Opti-Me family medication care web app for GitHub Pages.
+Opti-Me family medication care web app for GitHub Pages and Supabase.
 
-The V2 app focuses on taking a medication bag/label photo, running browser OCR,
-matching the detected drug name against trusted medication databases, and storing
-the result under a family profile.
+The V2 app focuses on taking a medicine or supplement photo, running browser OCR,
+matching the detected product name against trusted medication and health-food
+databases, and storing the result under a family profile.
 
 ## Development
 
@@ -23,8 +23,8 @@ The app is configured for a root-domain deployment such as `https://optime.jeong
 
 ## Supabase
 
-The app works in demo mode without Supabase credentials. To enable real auth and
-backend storage, create a Supabase project and set:
+Supabase is required for production auth, family sharing, medication records,
+and private backend storage. Set the browser-side values:
 
 ```bash
 VITE_SUPABASE_URL=...
@@ -38,8 +38,8 @@ never put `service_role` or other server secrets in a Vite env file.
 Apply the schema in `supabase/migrations`, then deploy the Edge Functions in
 `supabase/functions`.
 
-Secrets for server-side drug database lookup must be configured in Supabase Edge
-Functions, not in the browser:
+Secrets for server-side drug database lookup and catalog sync must be configured
+in Supabase Edge Functions or local admin scripts, not in the browser:
 
 ```bash
 DATA_GO_KR_SERVICE_KEY=...
