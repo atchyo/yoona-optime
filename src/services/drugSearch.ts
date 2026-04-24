@@ -93,8 +93,7 @@ async function searchCatalogDirectly(query: string): Promise<DrugDatabaseMatch[]
     });
 
     if (rows.length) {
-      return rows
-        .map((row) => mapCatalogRow(query, row))
+      return dedupeMatches(rows.map((row) => mapCatalogRow(query, row)))
         .sort((left, right) => compareMatches(query, left, right))
         .slice(0, DIRECT_RESULT_LIMIT);
     }
@@ -123,8 +122,7 @@ async function searchCatalogDirectly(query: string): Promise<DrugDatabaseMatch[]
       ? (data || []).filter((row) => tokens.every((token) => (row.search_compact || "").includes(token)))
       : data || [];
 
-  return rows
-    .map((row) => mapCatalogRow(query, row))
+  return dedupeMatches(rows.map((row) => mapCatalogRow(query, row)))
     .sort((left, right) => compareMatches(query, left, right))
     .slice(0, DIRECT_RESULT_LIMIT);
 }
@@ -180,7 +178,25 @@ function looksLikeSupplementQuery(query: string): boolean {
 }
 
 function dedupeMatches(matches: DrugDatabaseMatch[]): DrugDatabaseMatch[] {
-  return Array.from(new Map(matches.map((match) => [match.id, match])).values());
+  const result = new Map<string, DrugDatabaseMatch>();
+
+  matches.forEach((match) => {
+    const normalizedProduct = normalizeName(match.productName);
+    const normalizedManufacturer = normalizeName(match.manufacturer || "");
+    const key = `${match.source}:${normalizedProduct}:${normalizedManufacturer || match.id}`;
+
+    if (!result.has(key)) {
+      result.set(key, match);
+      return;
+    }
+
+    const current = result.get(key);
+    if (current && match.confidence > current.confidence) {
+      result.set(key, match);
+    }
+  });
+
+  return Array.from(result.values());
 }
 
 function compareMatches(query: string, left: DrugDatabaseMatch, right: DrugDatabaseMatch): number {

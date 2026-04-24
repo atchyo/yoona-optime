@@ -3072,6 +3072,11 @@ td select {
     grid-row: 3;
   }
 
+  .logout-button {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+
   .summary-grid,
   .dashboard-main-grid,
   .dashboard-lower-grid,

@@ -190,7 +190,7 @@ export function AppShell({
                 </div>
               )}
             </div>
-            <button className="ghost-button" onClick={onLogout} type="button">
+            <button className="ghost-button logout-button" onClick={onLogout} type="button">
               로그아웃
             </button>
           </div>
