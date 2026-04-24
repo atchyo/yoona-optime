@@ -1491,6 +1491,33 @@ textarea {
   font-size: 1.6rem;
 }
 
+.catalog-source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.catalog-source-card {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-alt);
+  padding: 14px;
+}
+
+.catalog-source-card span {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.catalog-source-card strong {
+  color: var(--color-primary-strong);
+  font-size: 1.2rem;
+}
+
 .catalog-sync-panel {
   display: flex;
   align-items: flex-end;
