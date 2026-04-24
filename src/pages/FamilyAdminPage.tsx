@@ -84,9 +84,9 @@ export function FamilyAdminPage({
       const line = summaries
         .map((summary) => `${sourceSyncLabel(summary.source)} ${summary.upsertedCount}건`)
         .join(" · ");
-      setCatalogSyncNote(line ? `공식 약 DB 동기화 완료: ${line}` : "공식 약 DB 동기화 완료");
+      setCatalogSyncNote(line ? `검색 인덱스 보강 완료: ${line}` : "검색 인덱스 보강 완료");
     } catch (error) {
-      setCatalogSyncNote(error instanceof Error ? error.message : "공식 약 DB 동기화 중 문제가 발생했습니다.");
+      setCatalogSyncNote(error instanceof Error ? error.message : "검색 인덱스 보강 중 문제가 발생했습니다.");
     } finally {
       setIsSyncingCatalog(false);
     }
@@ -276,9 +276,9 @@ export function FamilyAdminPage({
         {(user.familyRole === "owner" || user.familyRole === "manager") && (
           <div className="catalog-sync-panel">
             <div>
-              <strong>공식 약 DB 동기화</strong>
+              <strong>검색 인덱스 보강</strong>
               <p className="muted">
-                식약처 의약품 허가정보, e약은요, 건강기능식품정보를 검색 카탈로그로 적재합니다.
+                공식 DB 일부를 짧게 보강합니다. 전체 적재는 별도 관리 작업으로 분리합니다.
               </p>
             </div>
             <div className="catalog-sync-actions">
@@ -288,7 +288,7 @@ export function FamilyAdminPage({
                 onClick={() => void syncDrugCatalog()}
                 type="button"
               >
-                {isSyncingCatalog ? "동기화 중..." : "약 DB 동기화"}
+                {isSyncingCatalog ? "보강 중..." : "인덱스 보강"}
               </button>
               {catalogSyncNote && <span className="save-note">{catalogSyncNote}</span>}
             </div>

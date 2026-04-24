@@ -42,7 +42,7 @@ let healthFunctionalFoodCache:
   | { expiresAt: number; items: HealthFunctionalFoodListItem[] }
   | null = null;
 const HEALTH_FUNCTIONAL_FOOD_PAGE_SIZE = 100;
-const HEALTH_FUNCTIONAL_FOOD_MAX_PAGES = 200;
+const HEALTH_FUNCTIONAL_FOOD_MAX_PAGES = 25;
 const HEALTH_FUNCTIONAL_FOOD_CACHE_TTL_MS = 1000 * 60 * 30;
 
 Deno.serve(async (req) => {
