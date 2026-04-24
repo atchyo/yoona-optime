@@ -95,9 +95,9 @@ export function AppShell({
           ))}
         </nav>
         <div className="sidebar-card">
-          <span className="sidebar-card-label">선택된 공간</span>
+          <span className="sidebar-card-label">{workspaceKindLabel(workspace, familyMembers, user)}</span>
           <strong>{workspace.name}</strong>
-          <p>상단에서 가족공간과 관리대상을 따로 선택합니다.</p>
+          <p>건강공간은 데이터가 저장되는 곳이고, 관리대상은 그 안에서 보고 있는 가족입니다.</p>
         </div>
       </aside>
 
@@ -117,7 +117,7 @@ export function AppShell({
                 onClick={() => setIsSpaceMenuOpen((current) => !current)}
                 type="button"
               >
-                <span className="chip-label">공간</span>
+                <span className="chip-label">{workspaceKindLabel(workspace, familyMembers, user)}</span>
                 <strong>{workspace.name}</strong>
               </button>
               {isSpaceMenuOpen && (
@@ -135,7 +135,11 @@ export function AppShell({
                       type="button"
                     >
                       <strong>{item.name}</strong>
-                      <span>{item.id === workspace.id ? "현재 공간" : "공간 전환"}</span>
+                      <span>
+                        {item.id === workspace.id
+                          ? "현재 건강공간"
+                          : workspaceKindLabel(item, familyMembers, user)}
+                      </span>
                     </button>
                   ))}
                   {!availableWorkspaces.length && (
@@ -241,4 +245,16 @@ function profileRoleLabel(
   if (member?.role === "owner") return "대표";
   if (member?.role === "manager") return "관리";
   return "가족";
+}
+
+function workspaceKindLabel(
+  workspace: FamilyWorkspace,
+  familyMembers: FamilyMember[],
+  user: DemoUser,
+): string {
+  const connectedMembers = familyMembers.filter((member) => member.workspaceId === workspace.id);
+
+  if (workspace.ownerUserId !== user.id) return "초대받은 가족공간";
+  if (connectedMembers.some((member) => member.userId && member.userId !== user.id)) return "내 가족공간";
+  return "내 건강공간";
 }
