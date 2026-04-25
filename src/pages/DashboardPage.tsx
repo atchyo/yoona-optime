@@ -53,7 +53,7 @@ export function DashboardPage({
       return medication && profile ? { schedule, medication, profile } : undefined;
     })
     .filter(Boolean)
-    .slice(0, 6) as Array<{ schedule: MedicationSchedule; medication: Medication; profile: CareProfile }>;
+    .slice(0, 4) as Array<{ schedule: MedicationSchedule; medication: Medication; profile: CareProfile }>;
   const familyProfiles = careProfiles.filter((profile) => profile.type !== "pet");
   const petProfiles = careProfiles.filter((profile) => profile.type === "pet");
   const recentLogs = logs
@@ -73,7 +73,7 @@ export function DashboardPage({
   return (
     <div className="dashboard-home">
       <section className="summary-grid">
-        <SummaryCard icon="pill" label="복용 중인 약" value={`${medications.length}개`} action="전체 보기" onClick={onNavigateProfiles} />
+        <SummaryCard icon="pill" label="복용 중인 약" value={`${medications.length}개`} action="전체 보기" onClick={onNavigateScan} />
         <SummaryCard icon="bell" label="오늘 복용 예정" value={`${todaySchedules.length}개`} action="상세 보기" onClick={onNavigateReminders} />
         <SummaryCard icon="shield" label="주의 상호작용" value={`${findings.length}건`} action="확인하기" tone="danger" onClick={onNavigateInteractions} />
         <SummaryCard icon="file" label="이번 주 리포트" value={`${Math.max(1, familyProfiles.length)}개`} action="출력하기" onClick={onNavigateReports} />
@@ -93,14 +93,17 @@ export function DashboardPage({
             {todaySchedules.length ? (
               todaySchedules.map(({ schedule, medication, profile }) => (
                 <div className="schedule-row" key={schedule.id}>
-                  <time>{schedule.timeOfDay}</time>
+                  <time>
+                    <strong>{schedule.timeOfDay}</strong>
+                    <span>{timePeriodLabel(schedule.timeOfDay)}</span>
+                  </time>
                   <div className="medicine-icon" aria-hidden="true">{medicineIcon(medication.productName)}</div>
                   <div>
                     <strong>{medication.productName}</strong>
-                    <span>{schedule.label} · {medication.dosage || "등록 용량 확인"}</span>
+                    <span>{medication.dosage || schedule.label || "등록 용량 확인"}</span>
                   </div>
                   <button className="owner-badge schedule-done-button" onClick={() => void onMarkTaken(schedule)} type="button">
-                    복용 완료
+                    {profile.name}
                   </button>
                   <span className="owner-badge schedule-owner-badge">{profile.name}</span>
                 </div>
@@ -209,11 +212,11 @@ export function DashboardPage({
         <article className="card compact-card assistant-preview">
           <div className="section-heading">
             <p className="eyebrow">Guide</p>
-            <h2>상담 준비</h2>
+            <h2>AI 건강 상담</h2>
           </div>
-          <div className="chat-bubble user">감기약을 먹어도 되는지 확인하고 싶어요.</div>
+          <div className="chat-bubble user">감기약을 먹으면 운전해도 괜찮을까요?</div>
           <div className="chat-bubble">
-            등록 약 기준으로 성분 중복과 주의사항을 먼저 확인합니다. 위험하거나 애매하면 약사 또는 의사 상담을 권합니다.
+            일반적인 감기약 중 일부는 졸음을 유발할 수 있어 운전에 주의가 필요합니다. 제품 성분을 확인하거나 약사와 상담하세요.
           </div>
           <button className="primary-button" onClick={onNavigateChat} type="button">상담 안내 열기</button>
         </article>
@@ -229,8 +232,8 @@ export function DashboardPage({
           <div className="mini-record-list">
             {familyProfiles.slice(0, 3).map((profile) => (
               <div key={profile.id}>
-                <span>{profile.name} 복약 리포트</span>
-                <strong>보기</strong>
+                <span>{profile.name} 복약 지도 리포트</span>
+                <strong>다운로드</strong>
               </div>
             ))}
           </div>
@@ -281,6 +284,15 @@ function medicineIcon(name: string): string {
   if (/오메가|omega/i.test(name)) return "💊";
   if (/마그네슘|mag/i.test(name)) return "⚕";
   return "💊";
+}
+
+function timePeriodLabel(timeOfDay: string): string {
+  const hour = Number(timeOfDay.split(":")[0]);
+  if (Number.isNaN(hour)) return "예정";
+  if (hour < 11) return "아침";
+  if (hour < 15) return "점심";
+  if (hour < 20) return "저녁";
+  return "취침 전";
 }
 
 function profileAvatar(profile: CareProfile): string {

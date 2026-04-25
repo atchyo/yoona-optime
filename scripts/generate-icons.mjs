@@ -62,9 +62,10 @@ execFileSync("sips", ["-s", "format", "jpeg", sourcePngPath, "--out", flattenedJ
 execFileSync("sips", ["-s", "format", "png", flattenedJpegPath, "--out", sourcePngPath], { stdio: "ignore" });
 
 if (existsSync(originalIconPath)) {
-  execFileSync("sips", ["-c", "370", "370", "--cropOffset", "58", "78", originalIconPath, "--out", croppedOriginalPath], {
+  execFileSync("sips", ["-c", "390", "390", "--cropOffset", "74", "38", originalIconPath, "--out", croppedOriginalPath], {
     stdio: "ignore",
   });
+  replaceEdgeWhiteWithIconOrange(croppedOriginalPath);
   execFileSync("sips", ["-z", "512", "512", croppedOriginalPath, "--out", sourcePngPath], {
     stdio: "ignore",
   });
@@ -112,6 +113,105 @@ function flattenPngAlpha(filePath, matteRgb) {
   }
 
   writeFileSync(filePath, encodeRgbPng(png.width, png.height, rgb));
+}
+
+function replaceEdgeWhiteWithIconOrange(filePath) {
+  const png = decodePng(readFileSync(filePath));
+  floodEdgeRegion(png, (red, green, blue) => red > 235 && green > 235 && blue > 235);
+  floodEdgeRegion(png, (red, green, blue) => (
+    red > 185 &&
+    green > 60 &&
+    green < 205 &&
+    blue < 120 &&
+    red - green > 45 &&
+    green - blue > 35
+  ));
+  softenOriginalRoundedEdge(png);
+
+  const rgb = Buffer.alloc(png.width * png.height * 3);
+  for (let index = 0; index < png.width * png.height; index += 1) {
+    const sourceOffset = index * png.channels;
+    const outputOffset = index * 3;
+    rgb[outputOffset] = png.pixels[sourceOffset];
+    rgb[outputOffset + 1] = png.pixels[sourceOffset + 1];
+    rgb[outputOffset + 2] = png.pixels[sourceOffset + 2];
+  }
+
+  writeFileSync(filePath, encodeRgbPng(png.width, png.height, rgb));
+}
+
+function softenOriginalRoundedEdge(png) {
+  for (let y = 0; y < png.height; y += 1) {
+    for (let x = 0; x < png.width; x += 1) {
+      const offset = (y * png.width + x) * png.channels;
+      const red = png.pixels[offset];
+      const green = png.pixels[offset + 1];
+      const blue = png.pixels[offset + 2];
+      const nearWhite = red > 220 && green > 210 && blue > 180;
+      const nearOriginalEdge = x < 20 || y > png.height - 34;
+      if (!nearWhite || !nearOriginalEdge) continue;
+
+      const color = iconOrangeAt(x, y, png.width, png.height);
+      png.pixels[offset] = color[0];
+      png.pixels[offset + 1] = color[1];
+      png.pixels[offset + 2] = color[2];
+      if (png.channels === 4) png.pixels[offset + 3] = 255;
+    }
+  }
+}
+
+function floodEdgeRegion(png, shouldReplace) {
+  const visited = new Uint8Array(png.width * png.height);
+  const queue = [];
+
+  for (let x = 0; x < png.width; x += 1) {
+    enqueueIfMatch(x, 0);
+    enqueueIfMatch(x, png.height - 1);
+  }
+
+  for (let y = 0; y < png.height; y += 1) {
+    enqueueIfMatch(0, y);
+    enqueueIfMatch(png.width - 1, y);
+  }
+
+  for (let index = 0; index < queue.length; index += 1) {
+    const point = queue[index];
+    const offset = (point.y * png.width + point.x) * png.channels;
+    const color = iconOrangeAt(point.x, point.y, png.width, png.height);
+    png.pixels[offset] = color[0];
+    png.pixels[offset + 1] = color[1];
+    png.pixels[offset + 2] = color[2];
+    if (png.channels === 4) png.pixels[offset + 3] = 255;
+
+    enqueueIfMatch(point.x + 1, point.y);
+    enqueueIfMatch(point.x - 1, point.y);
+    enqueueIfMatch(point.x, point.y + 1);
+    enqueueIfMatch(point.x, point.y - 1);
+  }
+
+  function enqueueIfMatch(x, y) {
+    if (x < 0 || y < 0 || x >= png.width || y >= png.height) return;
+    const pixelIndex = y * png.width + x;
+    if (visited[pixelIndex]) return;
+    const offset = pixelIndex * png.channels;
+    const red = png.pixels[offset];
+    const green = png.pixels[offset + 1];
+    const blue = png.pixels[offset + 2];
+    if (!shouldReplace(red, green, blue)) return;
+    visited[pixelIndex] = 1;
+    queue.push({ x, y });
+  }
+}
+
+function iconOrangeAt(x, y, width, height) {
+  const horizontal = x / Math.max(1, width - 1);
+  const vertical = y / Math.max(1, height - 1);
+  const mix = Math.min(1, Math.max(0, horizontal * 0.32 + vertical * 0.68));
+  return [
+    Math.round(255 * (1 - mix) + 255 * mix),
+    Math.round(159 * (1 - mix) + 98 * mix),
+    Math.round(22 * (1 - mix) + 0 * mix),
+  ];
 }
 
 function decodePng(buffer) {

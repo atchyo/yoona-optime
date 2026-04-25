@@ -22,8 +22,7 @@ export type Route =
 
 const navItems: Array<{ path: Route; label: string; shortLabel: string; icon: IconName; ownerOnly?: boolean; adminOnly?: boolean }> = [
   { path: "/", label: "대시보드", shortLabel: "홈", icon: "home" },
-  { path: "/scan", label: "약 관리", shortLabel: "약관리", icon: "pill" },
-  { path: "/profiles", label: "가족약", shortLabel: "가족약", icon: "family" },
+  { path: "/scan", label: "약 관리", shortLabel: "약 관리", icon: "pill" },
   { path: "/history", label: "복용 기록", shortLabel: "기록", icon: "calendar" },
   { path: "/reminders", label: "복약 알림", shortLabel: "알림", icon: "bell" },
   { path: "/interactions", label: "상호작용 체크", shortLabel: "체크", icon: "shield" },
@@ -120,6 +119,21 @@ export function AppShell({
       </aside>
 
       <div className="content-shell">
+        <header className="mobile-app-header">
+          <div className="mobile-brand-mini">
+            <img alt="Opti-Me" className="mobile-brand-icon" src={brandMarkSrc} />
+            <strong>Opti-Me</strong>
+          </div>
+          <div className="mobile-header-actions">
+            <button className="topbar-icon-button" aria-label="알림" type="button">
+              <Icon name="bell" />
+              <span className="notification-dot" aria-hidden="true">3</span>
+            </button>
+            <button className="topbar-icon-button" aria-label="도움말" type="button">
+              <span aria-hidden="true">?</span>
+            </button>
+          </div>
+        </header>
         <header className="topbar">
           <div className="topbar-title">
             <p className="eyebrow">{currentRoute.label}</p>
@@ -132,6 +146,7 @@ export function AppShell({
               <span className="notification-dot" aria-hidden="true">3</span>
             </button>
             <button className="ghost-button topbar-help-button" type="button">
+              <span aria-hidden="true">ⓘ</span>
               도움말
             </button>
             <div className="space-switcher">
@@ -236,7 +251,7 @@ export function AppShell({
             type="button"
           >
             <span className="mobile-tab-icon" aria-hidden="true"><Icon name={item.icon} /></span>
-            {item.shortLabel}
+            {mobileTabLabel(item.path, item.shortLabel)}
           </button>
         ))}
       </nav>
@@ -281,7 +296,7 @@ function WorkspaceContextBanner({
 }
 
 function routeTitle(route: Route, userName: string): string {
-  if (route === "/") return `안녕하세요, ${userName}님!`;
+  if (route === "/") return `안녕하세요, ${userName}님! 👋`;
   if (route === "/scan") return "약 관리";
   if (route === "/profiles") return "가족약";
   if (route === "/history") return "복용 기록";
@@ -296,8 +311,13 @@ function routeTitle(route: Route, userName: string): string {
   return "Opti-Me";
 }
 
+function mobileTabLabel(path: Route, fallback: string): string {
+  if (path === "/family" || path === "/settings") return "더보기";
+  return fallback;
+}
+
 function routeSubtitle(route: Route): string {
-  if (route === "/") return "오늘 가족 복용 일정과 주의사항을 한눈에 확인하세요.";
+  if (route === "/") return "오늘도 우리 가족의 건강한 하루를 응원합니다.";
   if (route === "/scan") return "사진 촬영, 파일 첨부, 약명 검색으로 복용약을 등록합니다.";
   if (route === "/profiles") return "병원 방문 전 가족별 복용약과 성분을 빠르게 확인할 수 있습니다.";
   if (route === "/history") return "완료한 복용 기록과 앞으로 예정된 복용 일정을 함께 봅니다.";
