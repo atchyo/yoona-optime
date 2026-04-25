@@ -113,7 +113,7 @@ export function AppShell({
         <div className="sidebar-card">
           <span className="sidebar-card-label">{workspaceKindLabel(workspace, familyMembers, user)}</span>
           <strong>{workspace.name}</strong>
-          <p>건강공간은 데이터가 저장되는 곳이고, 관리대상은 그 안에서 보고 있는 가족입니다.</p>
+          <p>공간은 데이터가 저장되는 가족 단위입니다. 우측 상단 관리대상에서 누구의 약 기록을 볼지 바꿀 수 있습니다.</p>
         </div>
       </aside>
 

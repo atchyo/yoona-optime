@@ -1952,6 +1952,21 @@ td select {
   line-height: 1.5;
 }
 
+.invitation-profile-note {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 32px;
+  align-items: center;
+  margin-top: 10px;
+  border: 1px solid rgba(22, 119, 255, 0.24);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-primary-strong);
+  font-size: 0.88rem;
+  font-weight: 650;
+  padding: 6px 10px;
+}
+
 .invitation-actions {
   display: flex;
   align-items: center;

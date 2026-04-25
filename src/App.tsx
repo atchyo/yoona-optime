@@ -898,6 +898,7 @@ function InvitationInbox({
   onDecline: (invitationId: string) => Promise<void>;
   user: DemoUser;
 }): ReactElement | null {
+  const [pendingActionId, setPendingActionId] = useState("");
   const incomingInvitations = invitations.filter(
     (invitation) =>
       invitation.status === "pending" &&
@@ -905,6 +906,16 @@ function InvitationInbox({
   );
 
   if (!incomingInvitations.length) return null;
+
+  async function runInvitationAction(invitationId: string, action: () => Promise<void>): Promise<void> {
+    if (pendingActionId) return;
+    setPendingActionId(invitationId);
+    try {
+      await action();
+    } finally {
+      setPendingActionId("");
+    }
+  }
 
   return (
     <section className="invitation-inbox" aria-label="가족공간 초대">
@@ -914,17 +925,36 @@ function InvitationInbox({
             <p className="eyebrow">가족공간 초대</p>
             <strong>{invitation.workspaceName || "가족공간"} 초대가 도착했습니다.</strong>
             <p>
-              수락하면 이 가족공간을 함께 볼 수 있습니다. 기존 개인 복용 기록은 자동으로 합쳐지지 않습니다.
+              수락하면 상단 공간 전환에서 가족공간을 선택할 수 있습니다. 개인공간의 기존 복용 기록은 그대로 남고,
+              원할 때만 가족공간 프로필로 복사합니다.
             </p>
+            <span className="invitation-profile-note">
+              초대 프로필: {invitation.displayName} · {roleCopy(invitation.role)}
+            </span>
           </div>
           <div className="invitation-actions">
-            <button className="ghost-button" onClick={() => void onDecline(invitation.id)} type="button">
-              거절
+            <button
+              className="ghost-button"
+              disabled={pendingActionId === invitation.id}
+              onClick={() => void runInvitationAction(invitation.id, () => onDecline(invitation.id))}
+              type="button"
+            >
+              {pendingActionId === invitation.id ? "처리 중" : "거절"}
             </button>
-            <button className="ghost-button" onClick={() => void onAccept(invitation.id, false)} type="button">
+            <button
+              className="ghost-button"
+              disabled={pendingActionId === invitation.id}
+              onClick={() => void runInvitationAction(invitation.id, () => onAccept(invitation.id, false))}
+              type="button"
+            >
               기록 없이 참여
             </button>
-            <button className="primary-button" onClick={() => void onAccept(invitation.id, true)} type="button">
+            <button
+              className="primary-button"
+              disabled={pendingActionId === invitation.id}
+              onClick={() => void runInvitationAction(invitation.id, () => onAccept(invitation.id, true))}
+              type="button"
+            >
               내 기록 복사하고 참여
             </button>
           </div>
@@ -932,6 +962,11 @@ function InvitationInbox({
       ))}
     </section>
   );
+}
+
+function roleCopy(role: FamilyInvitation["role"]): string {
+  if (role === "manager") return "가족관리자";
+  return "가족구성원";
 }
 
 function getInitialRoute(): Route {
