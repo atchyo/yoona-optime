@@ -165,13 +165,8 @@ export function FamilyAdminPage({
   }
 
   async function addFamilyMember(): Promise<void> {
-    const displayName = memberForm.displayName.trim();
     const email = memberForm.email.trim().toLocaleLowerCase("ko-KR");
-
-    if (!displayName) {
-      setMemberSaveNote("이름을 입력해 주세요.");
-      return;
-    }
+    const displayName = memberForm.displayName.trim() || email.split("@")[0] || "";
 
     if (!email) {
       setMemberSaveNote("로그인에 사용할 이메일을 입력해 주세요.");
@@ -630,6 +625,25 @@ export function FamilyAdminPage({
                     </div>
                   );
                 })}
+              </div>
+
+              <div className="reference-invite-panel family-inline-invite-panel">
+                <div>
+                  <strong>초대 링크 발송</strong>
+                  <p>이메일을 등록해 두면 가족이 로그인할 때 같은 가족공간에 연결됩니다.</p>
+                </div>
+                <div className="inline-invite-controls">
+                  <input
+                    aria-label="가족 초대 이메일"
+                    onChange={(event) => updateMemberForm("email", event.target.value)}
+                    placeholder="가족 이메일 입력"
+                    type="email"
+                    value={memberForm.email}
+                  />
+                  <button className="primary-button" onClick={addFamilyMember} type="button">
+                    초대 보내기
+                  </button>
+                </div>
               </div>
             </div>
           </div>

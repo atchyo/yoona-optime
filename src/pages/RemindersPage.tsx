@@ -133,6 +133,13 @@ export function RemindersPage({
     }
   }
 
+  async function saveAllSchedules(): Promise<void> {
+    setStatusMessage("");
+    for (const medication of profileMeds) {
+      await saveSchedule(medication);
+    }
+  }
+
   return (
     <div className="reminder-page">
       <section className="card reminder-main-card">
@@ -150,8 +157,10 @@ export function RemindersPage({
           <div className="reminder-table-head" role="row">
             <span role="columnheader">시간</span>
             <span role="columnheader">약 정보</span>
-            <span role="columnheader">알림 문구</span>
-            <span role="columnheader">관리</span>
+            <span role="columnheader">복용 대상</span>
+            <span role="columnheader">반복</span>
+            <span role="columnheader">알림 방식</span>
+            <span role="columnheader">상태</span>
           </div>
           {profileMeds.map((medication) => {
             const draft = drafts[medication.id] || {
@@ -165,6 +174,7 @@ export function RemindersPage({
               <div className="reminder-table-row editable-reminder-row" key={medication.id} role="row">
                 <input
                   aria-label={`${medication.productName} 복용 시간`}
+                  className="reminder-time-input"
                   onChange={(event) => updateDraft(medication.id, { timeOfDay: event.target.value })}
                   type="time"
                   value={draft.timeOfDay}
@@ -173,38 +183,30 @@ export function RemindersPage({
                   <strong>{medication.productName}</strong>
                   <span>{medication.dosage || medication.ingredients[0]?.amount || "용량 미등록"}</span>
                 </div>
+                <span>{currentProfile.name}</span>
+                <span>매일</span>
                 <input
                   aria-label={`${medication.productName} 알림 문구`}
+                  className="reminder-label-input"
                   onChange={(event) => updateDraft(medication.id, { label: event.target.value })}
-                  placeholder="예) 아침 식후"
+                  placeholder="푸시 알림"
                   value={draft.label}
                 />
-                <div className="reminder-actions">
-                  <button
-                    className="primary-button"
+                <label className="toggle-switch reminder-row-toggle">
+                  <input
+                    checked={Boolean(existing)}
                     disabled={isPending}
-                    onClick={() => void saveSchedule(medication)}
-                    type="button"
-                  >
-                    {existing ? "저장" : "알림 추가"}
-                  </button>
-                  <button
-                    className="ghost-button"
-                    disabled={isPending}
-                    onClick={() => void markTaken(medication)}
-                    type="button"
-                  >
-                    복용 완료
-                  </button>
-                  <button
-                    className="danger-button"
-                    disabled={!existing || isPending}
-                    onClick={() => void deleteSchedule(medication)}
-                    type="button"
-                  >
-                    삭제
-                  </button>
-                </div>
+                    onChange={(event) => {
+                      if (event.target.checked) {
+                        void saveSchedule(medication);
+                      } else {
+                        void deleteSchedule(medication);
+                      }
+                    }}
+                    type="checkbox"
+                  />
+                  <span />
+                </label>
               </div>
             );
           })}
@@ -239,7 +241,7 @@ export function RemindersPage({
             </div>
           </label>
           <p className="muted">이 시간에는 알림을 보내지 않습니다.</p>
-          <button className="primary-button wide" type="button">저장</button>
+          <button className="primary-button wide" onClick={() => void saveAllSchedules()} type="button">저장</button>
         </section>
 
         <section className="card compact-card">

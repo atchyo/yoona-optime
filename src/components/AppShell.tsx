@@ -3,6 +3,7 @@ import type { ReactElement, ReactNode } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { Icon } from "./Icon";
 import type { IconName } from "./Icon";
+import { BrandMark } from "./BrandMark";
 import type { CareProfile, DemoUser, FamilyMember, FamilyWorkspace, ThemeMode } from "../types";
 
 export type Route =
@@ -33,9 +34,6 @@ const navItems: Array<{ path: Route; label: string; shortLabel: string; icon: Ic
   { path: "/settings", label: "설정", shortLabel: "설정", icon: "settings" },
   { path: "/service-admin", label: "서비스 관리", shortLabel: "관리", icon: "clipboard", adminOnly: true },
 ];
-
-const brandMarkSrc = `${import.meta.env.BASE_URL}opti_me_family_mark.png?v=20260425-1`;
-const sidebarIllustrationSrc = `${import.meta.env.BASE_URL}family-care-illustration.png?v=20260425-1`;
 
 interface AppShellProps {
   availableProfiles: CareProfile[];
@@ -77,10 +75,7 @@ export function AppShell({
     if (item.ownerOnly) return user.familyRole === "owner" || user.familyRole === "manager";
     return true;
   });
-  const preferredMobilePaths: Route[] =
-    user.familyRole === "owner" || user.familyRole === "manager"
-      ? ["/", "/scan", "/reminders", "/chat", "/family"]
-      : ["/", "/scan", "/reminders", "/chat", "/settings"];
+  const preferredMobilePaths: Route[] = ["/", "/scan", "/history", "/reminders", "/chat"];
   const mobileItems = preferredMobilePaths
     .map((path) => visibleItems.find((item) => item.path === path))
     .filter(Boolean) as typeof visibleItems;
@@ -90,7 +85,7 @@ export function AppShell({
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand-block">
-          <img alt="Opti-Me" className="app-icon brand-icon" src={brandMarkSrc} />
+          <BrandMark className="brand-icon" />
           <div>
             <strong>Opti-Me</strong>
             <span>가족 약 관리</span>
@@ -111,27 +106,39 @@ export function AppShell({
           ))}
         </nav>
         <div className="sidebar-card">
-          <img alt="" className="sidebar-illustration" src={sidebarIllustrationSrc} />
-          <span className="sidebar-card-label">{workspaceKindLabel(workspace, familyMembers, user)}</span>
+          <div className="sidebar-family-art" aria-hidden="true">
+            <span className="family-face face-one" />
+            <span className="family-face face-two" />
+            <span className="family-face face-three" />
+            <span className="family-face face-four" />
+            <span className="pet-face-mini" />
+          </div>
           <strong>우리 가족의 건강을 한눈에, 스마트하게</strong>
           <p>약과 영양제, 반려동물 기록까지 안전하고 체계적으로 관리하세요.</p>
         </div>
       </aside>
 
       <div className="content-shell">
+        <header className="mobile-statusbar" aria-hidden="true">
+          <strong>09:41</strong>
+          <span>•••</span>
+        </header>
         <header className="mobile-app-header">
-          <div className="mobile-brand-mini">
-            <img alt="Opti-Me" className="mobile-brand-icon" src={brandMarkSrc} />
-            <strong>Opti-Me</strong>
+          <div className="mobile-route-title">
+            {route !== "/" && (
+              <button aria-label="뒤로" className="mobile-back-button" onClick={() => onNavigate("/")} type="button">
+                &lt;
+              </button>
+            )}
+            {route === "/" && <BrandMark className="mobile-brand-icon" />}
+            <div>
+              <h1>{routeTitle(route, user.name)}</h1>
+              <p>{mobileRouteSubtitle(route)}</p>
+            </div>
           </div>
           <div className="mobile-header-actions">
-            <button className="topbar-icon-button" aria-label="알림" type="button">
-              <Icon name="bell" />
-              <span className="notification-dot" aria-hidden="true">3</span>
-            </button>
-            <button className="topbar-icon-button" aria-label="도움말" type="button">
-              <span aria-hidden="true">?</span>
-            </button>
+            <span className="topbar-avatar" aria-hidden="true">{profileAvatar(currentProfile)}</span>
+            <button className="topbar-icon-button" aria-label="알림" type="button"><Icon name="bell" /></button>
           </div>
         </header>
         <header className="topbar">
@@ -314,13 +321,30 @@ function routeTitle(route: Route, userName: string): string {
 }
 
 function mobileTabLabel(path: Route, fallback: string): string {
-  if (path === "/family" || path === "/settings") return "더보기";
+  if (path === "/") return "홈";
+  if (path === "/chat") return "상담";
+  if (path === "/reminders") return "알림";
+  if (path === "/history") return "기록";
   return fallback;
+}
+
+function mobileRouteSubtitle(route: Route): string {
+  if (route === "/") return "오늘도 건강한 하루를 함께 관리해요.";
+  if (route === "/scan") return "등록된 약을 확인하고 관리하세요.";
+  if (route === "/history") return "캘린더로 복용 여부를 확인하세요.";
+  if (route === "/reminders") return "정해진 시간에 복용을 도와드려요.";
+  if (route === "/interactions") return "함께 복용해도 안전한지 확인해요.";
+  if (route === "/chat") return "약에 대한 궁금증을 물어보세요.";
+  if (route === "/reports") return "병원 제출용 리포트를 생성하세요.";
+  if (route === "/family") return "가족 구성원과 권한을 관리하세요.";
+  if (route === "/pets") return "사료와 영양제 기록을 관리하세요.";
+  if (route === "/settings") return "앱 환경과 계정을 관리하세요.";
+  return routeSubtitle(route);
 }
 
 function routeSubtitle(route: Route): string {
   if (route === "/") return "오늘도 우리 가족의 건강한 하루를 응원합니다.";
-  if (route === "/scan") return "사진 촬영, 파일 첨부, 약명 검색으로 복용약을 등록합니다.";
+  if (route === "/scan") return "가족의 모든 약과 영양제를 한 화면에서 관리할 수 있습니다.";
   if (route === "/profiles") return "병원 방문 전 가족별 복용약과 성분을 빠르게 확인할 수 있습니다.";
   if (route === "/history") return "완료한 복용 기록과 앞으로 예정된 복용 일정을 함께 봅니다.";
   if (route === "/reminders") return "정해진 시간과 장기복용 검토일을 놓치지 않게 관리합니다.";

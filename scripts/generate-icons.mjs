@@ -19,40 +19,12 @@ const CRC_TABLE = Array.from({ length: 256 }, (_, index) => {
 
 const iconSvg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0%" stop-color="#ff9f16"/>
-      <stop offset="54%" stop-color="#ff7a08"/>
-      <stop offset="100%" stop-color="#ff6200"/>
-    </linearGradient>
-    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#b54800" flood-opacity="0.18"/>
-    </filter>
-  </defs>
-  <rect width="512" height="512" fill="url(#bg)"/>
-  <g filter="url(#softShadow)">
-    <g transform="translate(183 111) rotate(43)">
-      <rect x="0" y="0" width="104" height="236" rx="52" fill="#fff"/>
-      <rect x="23" y="31" width="27" height="68" rx="14" fill="#ff7a08"/>
-      <rect x="56" y="31" width="27" height="68" rx="14" fill="#ff7a08"/>
-      <rect x="44" y="119" width="18" height="84" rx="9" fill="#ff7a08"/>
-    </g>
-    <g transform="translate(292 244) rotate(-15)">
-      <ellipse cx="70" cy="44" rx="72" ry="44" fill="#fff"/>
-      <rect x="-2" y="39" width="144" height="10" rx="5" fill="#ff7a08"/>
-      <rect x="66" y="0" width="10" height="88" rx="5" fill="#ff7a08"/>
-    </g>
-    <text
-      x="256"
-      y="406"
-      fill="#fff"
-      font-family="Arial Rounded MT Bold, Arial, Helvetica, sans-serif"
-      font-size="76"
-      font-weight="800"
-      letter-spacing="-1"
-      text-anchor="middle"
-    >Opti-Me</text>
-  </g>
+  <rect width="512" height="512" rx="112" fill="#4F46E5"/>
+  <circle cx="204" cy="164" r="101" fill="#FFE8A3"/>
+  <circle cx="308" cy="164" r="101" fill="#FFFFFF" opacity="0.96"/>
+  <circle cx="204" cy="348" r="101" fill="#FFFFFF" opacity="0.96"/>
+  <circle cx="308" cy="348" r="101" fill="#FFE8A3"/>
+  <circle cx="256" cy="256" r="56" fill="#4F46E5"/>
 </svg>
 `;
 
@@ -60,16 +32,6 @@ writeFileSync(sourceSvgPath, iconSvg);
 execFileSync("sips", ["-s", "format", "png", sourceSvgPath, "--out", sourcePngPath], { stdio: "ignore" });
 execFileSync("sips", ["-s", "format", "jpeg", sourcePngPath, "--out", flattenedJpegPath], { stdio: "ignore" });
 execFileSync("sips", ["-s", "format", "png", flattenedJpegPath, "--out", sourcePngPath], { stdio: "ignore" });
-
-if (existsSync(originalIconPath)) {
-  execFileSync("sips", ["-c", "390", "390", "--cropOffset", "74", "38", originalIconPath, "--out", croppedOriginalPath], {
-    stdio: "ignore",
-  });
-  replaceEdgeWhiteWithIconOrange(croppedOriginalPath);
-  execFileSync("sips", ["-z", "512", "512", croppedOriginalPath, "--out", sourcePngPath], {
-    stdio: "ignore",
-  });
-}
 
 for (const [fileName, size] of [
   ["apple-touch-icon.png", 180],
@@ -83,7 +45,7 @@ for (const [fileName, size] of [
 }
 
 for (const fileName of ["opti_me_app_icon.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "favicon-32.png"]) {
-  flattenPngAlpha(join(publicDir, fileName), [255, 122, 8]);
+  flattenPngAlpha(join(publicDir, fileName), [79, 70, 229]);
 }
 
 if (existsSync(flattenedJpegPath)) {

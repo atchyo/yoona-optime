@@ -481,7 +481,7 @@ export function MedicationScanPage({
                 </div>
                 <span>{selectedProfile.name}</span>
                 <span>{medication.instructions || medication.dosage || "복용 정보 미등록"}</span>
-                <span className="status-pill done">{sourceLabel(medication.source)}</span>
+                <span className="status-pill done">{medication.status === "confirmed" ? "복용 중" : "검토"}</span>
                 <button
                   className="danger-button table-action"
                   disabled={deletingMedicationId === medication.id}
@@ -496,7 +496,74 @@ export function MedicationScanPage({
         ) : (
           <p className="empty-panel">아직 등록된 약이 없습니다. 오른쪽 위 + 약 등록에서 첫 기록을 추가해 주세요.</p>
         )}
+        <div className="mobile-register-actions" aria-label="모바일 약 등록 빠른 실행">
+          <button
+            className="primary-button"
+            onClick={() => {
+              setActiveRegistrationMode("search");
+              setIsRegistrationOpen(true);
+            }}
+            type="button"
+          >
+            약 DB 검색으로 등록
+          </button>
+          <button
+            className="ghost-button"
+            onClick={() => {
+              setActiveRegistrationMode("photo");
+              setIsRegistrationOpen(true);
+            }}
+            type="button"
+          >
+            사진으로 OCR 등록
+          </button>
+        </div>
       </section>
+
+      {!isRegistrationOpen && (
+        <aside className="card quick-register-panel">
+          <h2>빠른 등록</h2>
+          <p className="muted">사진 OCR 또는 검색으로 약을 빠르게 추가하세요.</p>
+          <button
+            className="quick-register-card active"
+            onClick={() => {
+              setActiveRegistrationMode("search");
+              setIsRegistrationOpen(true);
+            }}
+            type="button"
+          >
+            <span className="medicine-icon" aria-hidden="true">●</span>
+            <strong>약 이름 검색 등록</strong>
+            <small>공식 DB 검색 후 가족별 복용정보 입력</small>
+          </button>
+          <button
+            className="quick-register-card"
+            onClick={() => {
+              setActiveRegistrationMode("photo");
+              setIsRegistrationOpen(true);
+            }}
+            type="button"
+          >
+            <span className="medicine-icon document" aria-hidden="true">▤</span>
+            <strong>사진/OCR 등록</strong>
+            <small>영양제 라벨을 촬영해 약명을 추출</small>
+          </button>
+          <button
+            className="primary-button wide"
+            onClick={() => {
+              setActiveRegistrationMode("search");
+              setIsRegistrationOpen(true);
+            }}
+            type="button"
+          >
+            새 약 등록하기
+          </button>
+          <div className="quick-review-box">
+            <strong>검토 필요</strong>
+            <span>장기복용 검토와 성분 중복 가능성을 상호작용 체크에서 확인해 주세요.</span>
+          </div>
+        </aside>
+      )}
 
       {isRegistrationOpen && (
         <section className="registration-drawer" aria-label="약 등록 패널">
