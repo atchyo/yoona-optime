@@ -1640,6 +1640,40 @@ textarea {
   font-size: 0.92rem;
 }
 
+.member-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  min-width: 92px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.member-status-badge.connected {
+  border-color: rgba(7, 135, 93, 0.22);
+  background: rgba(7, 135, 93, 0.1);
+  color: var(--color-safe);
+}
+
+.member-status-badge.pending {
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
+}
+
+.member-status-badge.owner {
+  border-color: rgba(22, 119, 255, 0.28);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}
+
 .member-edit-fields {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(160px, 0.65fr);

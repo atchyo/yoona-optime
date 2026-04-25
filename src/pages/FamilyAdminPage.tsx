@@ -100,7 +100,11 @@ export function FamilyAdminPage({
         accessibleProfileIds: normalizedAccessibleProfileIds(member, careProfiles),
       });
       setSavedMemberId(member.id);
-      setMemberSaveNote(`${member.displayName} 저장 완료`);
+      setMemberSaveNote(
+        member.userId
+          ? `${member.displayName} 저장 완료`
+          : `${member.displayName} 저장 완료. 초대 대기 이메일도 함께 업데이트했습니다.`,
+      );
     } catch (error) {
       setMemberSaveNote(error instanceof Error ? error.message : "가족 구성원 저장 중 문제가 발생했습니다.");
     }
@@ -455,6 +459,7 @@ export function FamilyAdminPage({
                   <strong>{member.displayName}</strong>
                   <span>{roleLabel(member.role)}</span>
                 </div>
+                <span className={memberConnectionClass(member)}>{memberConnectionLabel(member)}</span>
                 <div className="member-row-actions">
                   <button
                     className={savedMemberId === member.id ? "primary-button table-action is-saved" : "primary-button table-action"}
@@ -731,6 +736,16 @@ function roleLabel(role: FamilyRole): string {
   if (role === "owner") return "가족대표";
   if (role === "manager") return "가족관리자";
   return "가족구성원";
+}
+
+function memberConnectionLabel(member: FamilyMember): string {
+  if (member.role === "owner") return "대표 계정";
+  return member.userId ? "계정 연결됨" : "초대 대기";
+}
+
+function memberConnectionClass(member: FamilyMember): string {
+  if (member.role === "owner") return "member-status-badge owner";
+  return member.userId ? "member-status-badge connected" : "member-status-badge pending";
 }
 
 function petSummaryLine(profile: CareProfile): string {
