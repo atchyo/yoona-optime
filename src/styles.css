@@ -4640,6 +4640,64 @@ td select {
   overflow-wrap: anywhere;
 }
 
+.member-edit-card,
+.pending-invite-card,
+.family-share-status,
+.member-invite-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.member-edit-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+
+.member-edit-head > div:first-child,
+.pending-invite-card > div:first-child,
+.family-share-status > div:first-child {
+  min-width: 0;
+}
+
+.member-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.member-row-actions .table-action {
+  min-width: 82px;
+}
+
+.member-edit-fields {
+  grid-template-columns: minmax(180px, 0.9fr) minmax(220px, 1.25fr) minmax(160px, 0.72fr);
+}
+
+.member-edit-fields input,
+.member-edit-fields select {
+  width: 100%;
+  min-width: 0;
+}
+
+.member-access-block {
+  min-width: 0;
+}
+
+.access-chip-list {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 164px), 1fr));
+}
+
+.access-chip {
+  min-width: 0;
+}
+
+.access-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 1040px) {
   .topbar {
     grid-template-columns: 1fr;
@@ -4661,6 +4719,19 @@ td select {
   .workspace-chip {
     width: 100%;
     min-width: 0;
+  }
+
+  .member-edit-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .member-row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .member-edit-fields {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -4692,6 +4763,22 @@ td select {
 
   .match-grid {
     grid-template-columns: 1fr;
+  }
+
+  .family-share-status,
+  .pending-invite-card,
+  .member-edit-head,
+  .member-row-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .member-row-actions .table-action {
+    width: 100%;
+  }
+
+  .access-chip-list {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
