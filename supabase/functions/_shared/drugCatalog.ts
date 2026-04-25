@@ -202,13 +202,54 @@ export function looksLikeSupplementQuery(query: string): boolean {
 }
 
 export function dedupeMatches(matches: DrugMatch[]): DrugMatch[] {
-  const seen = new Set<string>();
-  return matches.filter((match) => {
-    const key = `${match.source}:${normalizeName(match.productName)}:${normalizeName(match.manufacturer || "")}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
+  const result = new Map<string, DrugMatch>();
+
+  matches.forEach((match) => {
+    const key = normalizeName(match.productName);
+    if (!key) return;
+
+    const current = result.get(key);
+    if (!current) {
+      result.set(key, match);
+      return;
+    }
+
+    result.set(key, mergeDuplicateMatch(current, match));
   });
+
+  return Array.from(result.values());
+}
+
+function mergeDuplicateMatch(current: DrugMatch, incoming: DrugMatch): DrugMatch {
+  const preferred = incoming.confidence > current.confidence ? incoming : current;
+  const fallback = preferred === incoming ? current : incoming;
+
+  return {
+    ...preferred,
+    ingredients: mergeIngredients(current.ingredients, incoming.ingredients),
+    warnings: mergeStrings(current.warnings, incoming.warnings),
+    interactions: mergeStrings(current.interactions, incoming.interactions),
+    dosageForm: preferred.dosageForm || fallback.dosageForm,
+    efficacy: preferred.efficacy || fallback.efficacy,
+    usage: preferred.usage || fallback.usage,
+    confidence: Math.max(current.confidence, incoming.confidence),
+  };
+}
+
+function mergeIngredients(
+  left: DrugMatch["ingredients"],
+  right: DrugMatch["ingredients"],
+): DrugMatch["ingredients"] {
+  const map = new Map<string, DrugMatch["ingredients"][number]>();
+  [...left, ...right].forEach((ingredient) => {
+    const key = `${normalizeName(ingredient.name)}:${normalizeName(ingredient.amount || "")}`;
+    if (!map.has(key)) map.set(key, ingredient);
+  });
+  return Array.from(map.values());
+}
+
+function mergeStrings(left: string[], right: string[]): string[] {
+  return Array.from(new Set([...left, ...right].filter(Boolean)));
 }
 
 export function escapeLikePattern(value: string): string {

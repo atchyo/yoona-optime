@@ -128,8 +128,7 @@ async function searchCatalog(
       );
 
       if (exactRows.length) {
-        return exactRows
-          .map((row) => toCatalogMatch(query, row))
+        return dedupeMatches(exactRows.map((row) => toCatalogMatch(query, row)))
           .sort((left, right) => compareMatches(query, left, right))
           .slice(0, RESULT_LIMIT);
       }
@@ -141,8 +140,7 @@ async function searchCatalog(
     );
 
     if (tokenMatchedRows.length) {
-      return tokenMatchedRows
-        .map((row) => toCatalogMatch(query, row))
+      return dedupeMatches(tokenMatchedRows.map((row) => toCatalogMatch(query, row)))
         .sort((left, right) => compareMatches(query, left, right));
     }
 
@@ -151,8 +149,7 @@ async function searchCatalog(
       .sort((left, right) => scoreCatalogRow(query, tokens, right) - scoreCatalogRow(query, tokens, left));
 
     if (partialRows.length) {
-      return partialRows
-        .map((row) => toCatalogMatch(query, row))
+      return dedupeMatches(partialRows.map((row) => toCatalogMatch(query, row)))
         .sort((left, right) => compareMatches(query, left, right))
         .slice(0, RESULT_LIMIT);
     }
@@ -184,8 +181,7 @@ async function searchCatalog(
       : data;
   const rows = tokenMatchedRows.length ? tokenMatchedRows : data;
 
-  return rows
-    .map((row) => toCatalogMatch(query, row))
+  return dedupeMatches(rows.map((row) => toCatalogMatch(query, row)))
     .sort((left, right) => compareMatches(query, left, right));
 }
 
