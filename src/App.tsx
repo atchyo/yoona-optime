@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 import { AppShell } from "./components/AppShell";
 import type { Route } from "./components/AppShell";
@@ -10,18 +10,7 @@ import {
   workspace as seedWorkspace,
 } from "./data/demoData";
 import { DashboardPage } from "./pages/DashboardPage";
-import { FamilyAdminPage } from "./pages/FamilyAdminPage";
 import { LoginPage } from "./pages/LoginPage";
-import { MedicationHistoryPage } from "./pages/MedicationHistoryPage";
-import { MedicationScanPage } from "./pages/MedicationScanPage";
-import { PetAdminPage } from "./pages/PetAdminPage";
-import { ProfilesPage } from "./pages/ProfilesPage";
-import { ReportsPage } from "./pages/ReportsPage";
-import { RemindersPage } from "./pages/RemindersPage";
-import { RuleChatPage } from "./pages/RuleChatPage";
-import { SafetyCheckPage } from "./pages/SafetyCheckPage";
-import { ServiceAdminPage } from "./pages/ServiceAdminPage";
-import { SettingsPage } from "./pages/SettingsPage";
 import { appConfig } from "./config";
 import {
   acceptRemoteFamilyInvitation,
@@ -83,6 +72,17 @@ import type {
 } from "./types";
 
 const basePath = appConfig.basePath;
+const FamilyAdminPage = lazy(() => import("./pages/FamilyAdminPage").then((module) => ({ default: module.FamilyAdminPage })));
+const MedicationHistoryPage = lazy(() => import("./pages/MedicationHistoryPage").then((module) => ({ default: module.MedicationHistoryPage })));
+const MedicationScanPage = lazy(() => import("./pages/MedicationScanPage").then((module) => ({ default: module.MedicationScanPage })));
+const PetAdminPage = lazy(() => import("./pages/PetAdminPage").then((module) => ({ default: module.PetAdminPage })));
+const ProfilesPage = lazy(() => import("./pages/ProfilesPage").then((module) => ({ default: module.ProfilesPage })));
+const ReportsPage = lazy(() => import("./pages/ReportsPage").then((module) => ({ default: module.ReportsPage })));
+const RemindersPage = lazy(() => import("./pages/RemindersPage").then((module) => ({ default: module.RemindersPage })));
+const RuleChatPage = lazy(() => import("./pages/RuleChatPage").then((module) => ({ default: module.RuleChatPage })));
+const SafetyCheckPage = lazy(() => import("./pages/SafetyCheckPage").then((module) => ({ default: module.SafetyCheckPage })));
+const ServiceAdminPage = lazy(() => import("./pages/ServiceAdminPage").then((module) => ({ default: module.ServiceAdminPage })));
+const SettingsPage = lazy(() => import("./pages/SettingsPage").then((module) => ({ default: module.SettingsPage })));
 
 export function App(): ReactElement {
   const [theme, setTheme] = useState<ThemeMode>(() => loadTheme());
@@ -758,129 +758,131 @@ export function App(): ReactElement {
         onAccept={handleAcceptInvitation}
         onDecline={handleDeclineInvitation}
       />
-      {route === "/" && (
-        <DashboardPage
-          careProfiles={displayCareProfiles}
-          currentProfile={displayCurrentProfile}
-          familyMembers={familyMembers}
-          logs={logs}
-          medications={medications}
-          onNavigateChat={() => navigate("/chat")}
-          onNavigateHistory={() => navigate("/history")}
-          onNavigateInteractions={() => navigate("/interactions")}
-          onNavigateProfiles={() => navigate("/profiles")}
-          onNavigateReports={() => navigate("/reports")}
-          onNavigateReminders={() => navigate("/reminders")}
-          onNavigateScan={() => navigate("/scan")}
-          onMarkTaken={handleMarkTaken}
-          scans={scans}
-          schedules={effectiveSchedules}
-        />
-      )}
-      {route === "/scan" && (
-        <MedicationScanPage
-          careProfiles={registrationCareProfiles}
-          currentProfile={displayCurrentProfile}
-          medications={medications}
-          onDeleteMedication={handleDeleteMedication}
-          onConfirmMedication={handleConfirmMedication}
-          onCreateTemporaryMedication={handleCreateTemporaryMedication}
-        />
-      )}
-      {route === "/profiles" && (
-        <ProfilesPage
-          careProfiles={displayCareProfiles}
-          currentProfileId={currentProfile.id}
-          familyMembers={familyMembers}
-          medications={medications}
-          onDeleteMedication={handleDeleteMedication}
-          schedules={effectiveSchedules}
-          temporaryMedications={temporaryMedications}
-        />
-      )}
-      {route === "/history" && (
-        <MedicationHistoryPage
-          careProfiles={displayCareProfiles}
-          currentProfile={displayCurrentProfile}
-          logs={logs}
-          medications={medications}
-          onMarkTaken={handleMarkTaken}
-          schedules={effectiveSchedules}
-        />
-      )}
-      {route === "/interactions" && (
-        <SafetyCheckPage
-          careProfiles={displayCareProfiles}
-          currentProfile={displayCurrentProfile}
-          medications={medications}
-        />
-      )}
-      {route === "/reminders" && (
-        <RemindersPage
-          currentProfile={displayCurrentProfile}
-          logs={logs}
-          medications={medications}
-          onDeleteSchedule={handleDeleteMedicationSchedule}
-          onMarkTaken={handleMarkTaken}
-          onSaveSchedule={handleSaveMedicationSchedule}
-          schedules={schedules}
-        />
-      )}
-      {route === "/chat" && (
-        <RuleChatPage currentProfile={displayCurrentProfile} medications={medications} />
-      )}
-      {route === "/reports" && (
-        <ReportsPage
-          careProfiles={displayCareProfiles}
-          currentProfileId={currentProfile.id}
-          familyMembers={familyMembers}
-          medications={medications}
-          schedules={effectiveSchedules}
-          temporaryMedications={temporaryMedications}
-        />
-      )}
-      {route === "/family" && (
-        <FamilyAdminPage
-          careProfiles={careProfileList}
-          familyInvitations={familyInvitations}
-          familyMembers={familyMembers}
-          medications={medications}
-          onAddMember={handleAddFamilyMember}
-          onAddCareProfile={handleAddCareProfile}
-          onDeleteCareProfile={handleDeleteCareProfile}
-          onDeleteMember={handleDeleteFamilyMember}
-          onRevokeInvitation={handleRevokeInvitation}
-          onUpdateCareProfile={handleUpdateCareProfile}
-          onUpdateMember={handleUpdateFamilyMember}
-          scans={scans}
-          temporaryMedications={temporaryMedications}
-          user={user}
-          workspace={familyWorkspace}
-        />
-      )}
-      {route === "/pets" && (
-        <PetAdminPage
-          careProfiles={careProfileList}
-          medications={medications}
-          onAddCareProfile={handleAddCareProfile}
-          onDeleteCareProfile={handleDeleteCareProfile}
-          onUpdateCareProfile={handleUpdateCareProfile}
-          workspace={familyWorkspace}
-        />
-      )}
-      {route === "/settings" && (
-        <SettingsPage
-          availableWorkspaceCount={availableWorkspaces.length}
-          onThemeToggle={() => setTheme(theme === "light" ? "dark" : "light")}
-          theme={theme}
-          user={user}
-          workspace={familyWorkspace}
-        />
-      )}
-      {route === "/service-admin" && user.role === "admin" && <ServiceAdminPage />}
-      {logs.length > 0 && (
-        <p className="sr-only">최근 복용 완료 기록 {logs.length}건</p>
-      )}
+      <Suspense fallback={<div className="card page-loading">화면을 준비하고 있습니다.</div>}>
+        {route === "/" && (
+          <DashboardPage
+            careProfiles={displayCareProfiles}
+            currentProfile={displayCurrentProfile}
+            familyMembers={familyMembers}
+            logs={logs}
+            medications={medications}
+            onNavigateChat={() => navigate("/chat")}
+            onNavigateHistory={() => navigate("/history")}
+            onNavigateInteractions={() => navigate("/interactions")}
+            onNavigateProfiles={() => navigate("/profiles")}
+            onNavigateReports={() => navigate("/reports")}
+            onNavigateReminders={() => navigate("/reminders")}
+            onNavigateScan={() => navigate("/scan")}
+            onMarkTaken={handleMarkTaken}
+            scans={scans}
+            schedules={effectiveSchedules}
+          />
+        )}
+        {route === "/scan" && (
+          <MedicationScanPage
+            careProfiles={registrationCareProfiles}
+            currentProfile={displayCurrentProfile}
+            medications={medications}
+            onDeleteMedication={handleDeleteMedication}
+            onConfirmMedication={handleConfirmMedication}
+            onCreateTemporaryMedication={handleCreateTemporaryMedication}
+          />
+        )}
+        {route === "/profiles" && (
+          <ProfilesPage
+            careProfiles={displayCareProfiles}
+            currentProfileId={currentProfile.id}
+            familyMembers={familyMembers}
+            medications={medications}
+            onDeleteMedication={handleDeleteMedication}
+            schedules={effectiveSchedules}
+            temporaryMedications={temporaryMedications}
+          />
+        )}
+        {route === "/history" && (
+          <MedicationHistoryPage
+            careProfiles={displayCareProfiles}
+            currentProfile={displayCurrentProfile}
+            logs={logs}
+            medications={medications}
+            onMarkTaken={handleMarkTaken}
+            schedules={effectiveSchedules}
+          />
+        )}
+        {route === "/interactions" && (
+          <SafetyCheckPage
+            careProfiles={displayCareProfiles}
+            currentProfile={displayCurrentProfile}
+            medications={medications}
+          />
+        )}
+        {route === "/reminders" && (
+          <RemindersPage
+            currentProfile={displayCurrentProfile}
+            logs={logs}
+            medications={medications}
+            onDeleteSchedule={handleDeleteMedicationSchedule}
+            onMarkTaken={handleMarkTaken}
+            onSaveSchedule={handleSaveMedicationSchedule}
+            schedules={schedules}
+          />
+        )}
+        {route === "/chat" && (
+          <RuleChatPage currentProfile={displayCurrentProfile} medications={medications} />
+        )}
+        {route === "/reports" && (
+          <ReportsPage
+            careProfiles={displayCareProfiles}
+            currentProfileId={currentProfile.id}
+            familyMembers={familyMembers}
+            medications={medications}
+            schedules={effectiveSchedules}
+            temporaryMedications={temporaryMedications}
+          />
+        )}
+        {route === "/family" && (
+          <FamilyAdminPage
+            careProfiles={careProfileList}
+            familyInvitations={familyInvitations}
+            familyMembers={familyMembers}
+            medications={medications}
+            onAddMember={handleAddFamilyMember}
+            onAddCareProfile={handleAddCareProfile}
+            onDeleteCareProfile={handleDeleteCareProfile}
+            onDeleteMember={handleDeleteFamilyMember}
+            onRevokeInvitation={handleRevokeInvitation}
+            onUpdateCareProfile={handleUpdateCareProfile}
+            onUpdateMember={handleUpdateFamilyMember}
+            scans={scans}
+            temporaryMedications={temporaryMedications}
+            user={user}
+            workspace={familyWorkspace}
+          />
+        )}
+        {route === "/pets" && (
+          <PetAdminPage
+            careProfiles={careProfileList}
+            medications={medications}
+            onAddCareProfile={handleAddCareProfile}
+            onDeleteCareProfile={handleDeleteCareProfile}
+            onUpdateCareProfile={handleUpdateCareProfile}
+            workspace={familyWorkspace}
+          />
+        )}
+        {route === "/settings" && (
+          <SettingsPage
+            availableWorkspaceCount={availableWorkspaces.length}
+            onThemeToggle={() => setTheme(theme === "light" ? "dark" : "light")}
+            theme={theme}
+            user={user}
+            workspace={familyWorkspace}
+          />
+        )}
+        {route === "/service-admin" && user.role === "admin" && <ServiceAdminPage />}
+        {logs.length > 0 && (
+          <p className="sr-only">최근 복용 완료 기록 {logs.length}건</p>
+        )}
+      </Suspense>
     </AppShell>
   );
 }
