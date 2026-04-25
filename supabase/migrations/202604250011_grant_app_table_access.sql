@@ -1,0 +1,33 @@
+grant usage on schema public to anon, authenticated, service_role;
+
+grant select, insert, update, delete on public.profiles to authenticated;
+grant select, insert, update, delete on public.family_workspaces to authenticated;
+grant select, insert, update, delete on public.family_members to authenticated;
+grant select, insert, update, delete on public.care_profiles to authenticated;
+grant select, insert, update, delete on public.family_invitations to authenticated;
+grant select, insert, update, delete on public.ocr_scans to authenticated;
+grant select, insert, update, delete on public.medication_photos to authenticated;
+grant select, insert, update, delete on public.drug_database_matches to authenticated;
+grant select, insert, update, delete on public.medications to authenticated;
+grant select, insert, update, delete on public.temporary_medications to authenticated;
+grant select, insert, update, delete on public.medication_schedules to authenticated;
+grant select, insert, update, delete on public.medication_logs to authenticated;
+grant select, insert, update, delete on public.rule_based_chat_logs to authenticated;
+grant select, insert, update, delete on public.drug_catalog_items to authenticated;
+grant select on public.drug_catalog_sync_runs to authenticated;
+
+grant select, insert, update, delete on public.profiles to service_role;
+grant select, insert, update, delete on public.family_workspaces to service_role;
+grant select, insert, update, delete on public.family_members to service_role;
+grant select, insert, update, delete on public.care_profiles to service_role;
+grant select, insert, update, delete on public.family_invitations to service_role;
+grant select, insert, update, delete on public.ocr_scans to service_role;
+grant select, insert, update, delete on public.medication_photos to service_role;
+grant select, insert, update, delete on public.drug_database_matches to service_role;
+grant select, insert, update, delete on public.medications to service_role;
+grant select, insert, update, delete on public.temporary_medications to service_role;
+grant select, insert, update, delete on public.medication_schedules to service_role;
+grant select, insert, update, delete on public.medication_logs to service_role;
+grant select, insert, update, delete on public.rule_based_chat_logs to service_role;
+grant select, insert, update, delete on public.drug_catalog_items to service_role;
+grant select, insert, update, delete on public.drug_catalog_sync_runs to service_role;

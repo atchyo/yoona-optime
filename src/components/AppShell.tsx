@@ -213,6 +213,14 @@ export function AppShell({
           </div>
         </header>
 
+        <WorkspaceContextBanner
+          availableWorkspaces={availableWorkspaces}
+          familyMembers={familyMembers}
+          onOpenSpaceMenu={() => setIsSpaceMenuOpen(true)}
+          user={user}
+          workspace={workspace}
+        />
+
         <main className="page-content">{children}</main>
       </div>
 
@@ -231,6 +239,42 @@ export function AppShell({
         ))}
       </nav>
     </div>
+  );
+}
+
+function WorkspaceContextBanner({
+  availableWorkspaces,
+  familyMembers,
+  onOpenSpaceMenu,
+  user,
+  workspace,
+}: {
+  availableWorkspaces: FamilyWorkspace[];
+  familyMembers: FamilyMember[];
+  onOpenSpaceMenu: () => void;
+  user: DemoUser;
+  workspace: FamilyWorkspace;
+}): ReactElement | null {
+  if (availableWorkspaces.length <= 1) return null;
+
+  const currentKind = workspaceKindLabel(workspace, familyMembers, user);
+  const isInvitedWorkspace = workspace.ownerUserId !== user.id;
+
+  return (
+    <section className={isInvitedWorkspace ? "workspace-context-banner family" : "workspace-context-banner personal"}>
+      <div>
+        <span>{currentKind}</span>
+        <strong>{workspace.name}</strong>
+        <p>
+          {isInvitedWorkspace
+            ? "이 공간에 등록한 약은 가족 권한에 따라 공유됩니다."
+            : "개인공간 기록입니다. 초대 가족공간 기록과 다를 수 있습니다."}
+        </p>
+      </div>
+      <button className="ghost-button" onClick={onOpenSpaceMenu} type="button">
+        공간 바꾸기
+      </button>
+    </section>
   );
 }
 

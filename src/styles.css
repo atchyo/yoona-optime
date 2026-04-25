@@ -575,6 +575,59 @@ img {
   min-width: 0;
 }
 
+.workspace-context-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-surface) 86%, var(--color-primary-soft));
+  color: var(--color-text);
+  padding: 12px 14px;
+}
+
+.workspace-context-banner div {
+  min-width: 0;
+}
+
+.workspace-context-banner span,
+.workspace-context-banner strong,
+.workspace-context-banner p {
+  display: block;
+}
+
+.workspace-context-banner span {
+  color: var(--color-primary-strong);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.workspace-context-banner strong {
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+.workspace-context-banner p {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.workspace-context-banner.personal {
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.workspace-context-banner.family {
+  border-color: rgba(22, 119, 255, 0.28);
+  background: var(--color-primary-soft);
+}
+
 .page-loading {
   display: grid;
   min-height: 240px;
@@ -4350,6 +4403,15 @@ td select {
 @media (max-width: 720px) {
   .topbar-title h1 {
     font-size: 1.28rem;
+  }
+
+  .workspace-context-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workspace-context-banner .ghost-button {
+    width: 100%;
   }
 
   .topbar-actions {
