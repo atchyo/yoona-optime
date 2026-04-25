@@ -49,6 +49,8 @@ export function MedicationScanPage({
   const [registrationReviewAt, setRegistrationReviewAt] = useState("");
   const [activeRegistrationMode, setActiveRegistrationMode] = useState<"search" | "photo">("search");
   const [medicationFilter, setMedicationFilter] = useState<"all" | "active" | "review">("all");
+  const [medicationSearch, setMedicationSearch] = useState("");
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<DrugSource | "all">("all");
   const [matchDisplayCount, setMatchDisplayCount] = useState(MATCH_PAGE_SIZE);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -112,11 +114,24 @@ export function MedicationScanPage({
   const selectedProfileMedications = medications.filter(
     (medication) => medication.careProfileId === selectedProfile.id,
   );
-  const filteredProfileMedications = selectedProfileMedications.filter((medication) => {
-    if (medicationFilter === "active") return medication.status === "confirmed";
-    if (medicationFilter === "review") return medication.status !== "confirmed";
-    return true;
-  });
+  const filteredProfileMedications = selectedProfileMedications
+    .filter((medication) => {
+      if (medicationFilter === "active") return medication.status === "confirmed";
+      if (medicationFilter === "review") return medication.status !== "confirmed";
+      return true;
+    })
+    .filter((medication) => {
+      const query = medicationSearch.trim().toLocaleLowerCase("ko-KR");
+      if (!query) return true;
+      return [
+        medication.productName,
+        medication.dosage,
+        medication.instructions,
+        ingredientSummary(medication.ingredients),
+      ]
+        .filter((value): value is string => Boolean(value))
+        .some((value) => value.toLocaleLowerCase("ko-KR").includes(query));
+    });
   const registeredMedicationKeys = new Set(
     selectedProfileMedications.map((medication) => medicationKey(medication.source, medication.productName)),
   );
@@ -315,6 +330,7 @@ export function MedicationScanPage({
       );
       resetSearchArtifacts();
       resetRegistrationOptions();
+      setIsRegistrationOpen(false);
       setProgress(isRegistered ? `${match.productName} 기존 기록 갱신 완료` : `${match.productName} 등록 완료`);
     } catch (error) {
       setProgress(error instanceof Error ? error.message : "약 저장 중 문제가 발생했습니다.");
@@ -352,6 +368,7 @@ export function MedicationScanPage({
       );
       resetSearchArtifacts();
       resetRegistrationOptions();
+      setIsRegistrationOpen(false);
       setProgress(`${rawName} 임시약으로 저장 완료`);
     } catch (error) {
       setProgress(error instanceof Error ? error.message : "임시약 저장 중 문제가 발생했습니다.");
@@ -379,14 +396,21 @@ export function MedicationScanPage({
 
   return (
     <div className="scan-layout">
-      <section className="card full-span medication-manager-card">
+      <section className="card medication-manager-card">
         <div className="section-heading split-heading">
           <div>
             <p className="eyebrow">등록 약 관리</p>
             <h2>약 관리</h2>
             <p className="muted">{selectedProfile.name}님의 약과 영양제를 한곳에서 관리할 수 있습니다.</p>
           </div>
-          <button className="primary-button add-medication-button" onClick={() => setActiveRegistrationMode("search")} type="button">
+          <button
+            className="primary-button add-medication-button"
+            onClick={() => {
+              setActiveRegistrationMode("search");
+              setIsRegistrationOpen(true);
+            }}
+            type="button"
+          >
             + 약 등록
           </button>
         </div>
@@ -420,7 +444,25 @@ export function MedicationScanPage({
               검토
             </button>
           </div>
-          <span className="profile-active-badge">등록 {filteredProfileMedications.length}건</span>
+          <div className="manager-search-tools">
+            <input
+              aria-label="등록 약 검색"
+              onChange={(event) => setMedicationSearch(event.target.value)}
+              placeholder="약 이름, 성분, 복용법 검색"
+              value={medicationSearch}
+            />
+            <select
+              aria-label="복용 대상 선택"
+              onChange={(event) => setSelectedProfileId(event.target.value)}
+              value={selectedProfileId}
+            >
+              {careProfiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         {filteredProfileMedications.length ? (
           <div className="medication-table-list">
@@ -452,146 +494,119 @@ export function MedicationScanPage({
             ))}
           </div>
         ) : (
-          <p className="empty-panel">아직 등록된 약이 없습니다. 사진 촬영이나 약DB 검색으로 첫 기록을 추가해 주세요.</p>
+          <p className="empty-panel">아직 등록된 약이 없습니다. 오른쪽 위 + 약 등록에서 첫 기록을 추가해 주세요.</p>
         )}
       </section>
 
-      <section className="card scan-card registration-card">
-        <div className="section-heading">
-          <p className="eyebrow">사진 OCR</p>
-          <h2>사진/OCR 등록</h2>
-          <p className="muted">사진에는 이름, 생년월일, 병원/약국 정보가 포함될 수 있습니다. 기본 저장되며 나중에 사진만 삭제할 수 있습니다.</p>
-        </div>
-
-        <label className="field-label" htmlFor="care-profile">등록 대상</label>
-        <select id="care-profile" onChange={(event) => setSelectedProfileId(event.target.value)} value={selectedProfileId}>
-          {careProfiles.map((profile) => (
-            <option key={profile.id} value={profile.id}>
-              {profile.name}
-            </option>
-          ))}
-        </select>
-
-        <div className="scan-mode-switch" role="tablist" aria-label="약 등록 방식">
-          <button
-            aria-selected={activeRegistrationMode === "search"}
-            className={activeRegistrationMode === "search" ? "active" : ""}
-            onClick={() => setActiveRegistrationMode("search")}
-            role="tab"
-            type="button"
-          >
-            약명 검색
-          </button>
-          <button
-            aria-selected={activeRegistrationMode === "photo"}
-            className={activeRegistrationMode === "photo" ? "active" : ""}
-            onClick={() => setActiveRegistrationMode("photo")}
-            role="tab"
-            type="button"
-          >
-            사진/OCR
-          </button>
-        </div>
-
-        {activeRegistrationMode === "search" ? (
-          <div className="search-first-guide">
-            <strong>약명으로 먼저 검색하세요.</strong>
-            <p>영양제는 제품명뿐 아니라 제조사와 성분명으로도 검색해 보세요. 예: 고려은단 비타민D, 오메가3, 마그네슘</p>
-          </div>
-        ) : (
-          <>
-            <label className="field-label">약·영양제 사진</label>
-            <div className="capture-actions">
-              <button className="primary-button" onClick={() => void openCamera()} type="button">
-                카메라로 촬영
-              </button>
-              <button className="ghost-button" onClick={() => fileInputRef.current?.click()} type="button">
-                파일 첨부
+      {isRegistrationOpen && (
+        <section className="registration-drawer" aria-label="약 등록 패널">
+          <div className="card registration-workspace">
+            <div className="section-heading split-heading">
+              <div>
+                <p className="eyebrow">Medication Register</p>
+                <h2>약 등록</h2>
+                <p className="muted">약명 검색 또는 사진/OCR로 공식 DB 후보를 확인한 뒤 등록합니다.</p>
+              </div>
+              <button className="ghost-button" onClick={() => setIsRegistrationOpen(false)} type="button">
+                닫기
               </button>
             </div>
-            {isCameraOpen && (
-              <div className="camera-panel">
-                <video
-                  aria-label="카메라 미리보기"
-                  autoPlay
-                  className="camera-preview"
-                  muted
-                  onLoadedMetadata={() => void videoRef.current?.play()}
-                  playsInline
-                  ref={videoRef}
-                />
-                <div className="capture-actions">
-                  <button className="primary-button" onClick={() => void capturePhoto()} type="button">
-                    촬영하기
-                  </button>
-                  <button className="ghost-button" onClick={closeCamera} type="button">
-                    카메라 닫기
-                  </button>
+
+            <div className="registration-top-grid">
+              <label>
+                등록 대상
+                <select id="care-profile" onChange={(event) => setSelectedProfileId(event.target.value)} value={selectedProfileId}>
+                  {careProfiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="scan-mode-switch" role="tablist" aria-label="약 등록 방식">
+                <button
+                  aria-selected={activeRegistrationMode === "search"}
+                  className={activeRegistrationMode === "search" ? "active" : ""}
+                  onClick={() => setActiveRegistrationMode("search")}
+                  role="tab"
+                  type="button"
+                >
+                  약 검색
+                </button>
+                <button
+                  aria-selected={activeRegistrationMode === "photo"}
+                  className={activeRegistrationMode === "photo" ? "active" : ""}
+                  onClick={() => setActiveRegistrationMode("photo")}
+                  role="tab"
+                  type="button"
+                >
+                  사진/OCR
+                </button>
+              </div>
+            </div>
+
+            {activeRegistrationMode === "photo" && (
+              <div className="photo-register-grid">
+                <div className="camera-stage">
+                  {isCameraOpen ? (
+                    <video
+                      aria-label="카메라 미리보기"
+                      autoPlay
+                      className="camera-preview"
+                      muted
+                      onLoadedMetadata={() => void videoRef.current?.play()}
+                      playsInline
+                      ref={videoRef}
+                    />
+                  ) : photoDataUrl ? (
+                    <img alt="등록할 약 사진" src={photoDataUrl} />
+                  ) : (
+                    <div className="camera-placeholder">
+                      <strong>약통을 카메라에 맞춰주세요</strong>
+                      <span>라벨의 제품명과 함량이 보이게 촬영하면 좋아요.</span>
+                    </div>
+                  )}
+                  <canvas className="hidden-input" ref={canvasRef} />
                 </div>
-                <canvas className="hidden-input" ref={canvasRef} />
+                <div className="photo-action-panel">
+                  <button className="primary-button" onClick={() => (isCameraOpen ? void capturePhoto() : void openCamera())} type="button">
+                    {isCameraOpen ? "촬영하기" : "카메라 열기"}
+                  </button>
+                  <button className="ghost-button" onClick={() => fileInputRef.current?.click()} type="button">
+                    파일 첨부
+                  </button>
+                  {isCameraOpen && (
+                    <button className="ghost-button" onClick={closeCamera} type="button">
+                      카메라 닫기
+                    </button>
+                  )}
+                  {photoDataUrl && (
+                    <button className="ghost-button" onClick={() => setPhotoDataUrl(undefined)} type="button">
+                      사진 삭제
+                    </button>
+                  )}
+                  <input
+                    accept="image/*"
+                    className="hidden-input"
+                    ref={fileInputRef}
+                    onChange={(event) => {
+                      const file = event.currentTarget.files?.[0];
+                      if (file) void handleFile(file);
+                      event.currentTarget.value = "";
+                    }}
+                    type="file"
+                  />
+                  {cameraError && <p className="form-note error-note">{cameraError}</p>}
+                  <p className="muted">사진에는 개인정보가 포함될 수 있어요. 저장 후 사진만 삭제할 수 있습니다.</p>
+                </div>
               </div>
             )}
-            {cameraError && <p className="form-note error-note">{cameraError}</p>}
-            <input
-              accept="image/*"
-              className="hidden-input"
-              ref={fileInputRef}
-              onChange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                if (file) void handleFile(file);
-                event.currentTarget.value = "";
-              }}
-              type="file"
-            />
-            <p className="muted">기기 카메라로 바로 촬영하거나, 저장된 이미지를 파일로 첨부할 수 있습니다.</p>
 
-            {photoDataUrl && (
-              <figure className="photo-preview">
-                <img alt="등록할 약 사진" src={photoDataUrl} />
-                <figcaption>
-                  압축 저장 예정 · 약 {Math.round(estimateDataUrlSize(photoDataUrl) / 1024)}KB
-                  <button className="ghost-button" onClick={() => setPhotoDataUrl(undefined)} type="button">
-                    사진 삭제
-                  </button>
-                </figcaption>
-              </figure>
-            )}
-          </>
-        )}
-
-      </section>
-
-      <section className="card ocr-result-card">
-        <div className="section-heading">
-          <p className="eyebrow">인식 결과</p>
-          <h2>OCR 결과와 후보</h2>
-        </div>
-        <textarea
-          aria-label="OCR 원문"
-          onChange={(event) => setOcrText(event.target.value)}
-          placeholder="OCR 결과가 여기에 표시됩니다. 잘못 인식된 약명은 직접 수정할 수 있습니다."
-          rows={8}
-          value={ocrText}
-        />
-        <p className="muted">OCR 신뢰도: {ocrConfidence || 0}%</p>
-        <div className="tag-list">
-          {candidates.map((candidate) => (
-            <button className="tag-button" key={candidate} onClick={() => setManualName(candidate)} type="button">
-              {candidate}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="card full-span db-match-card">
-        <div className="section-heading">
-          <p className="eyebrow">공식 약DB</p>
-          <h2>공식 DB 후보 확인</h2>
-          <p className="muted">
-            실제 공식 데이터베이스 검색 결과만 표시합니다. 관련도 높은 후보를 10개씩 나누어 보여주고,
-            후보가 없으면 수기 입력 후 임시약으로 저장해 주세요.
-          </p>
-        </div>
+            <div className="registration-search-panel">
+              <div>
+                <p className="eyebrow">Drug Database Matches</p>
+                <h3>공식 DB 후보 확인</h3>
+              </div>
         <div className="manual-search">
           <div className="search-input-wrap">
             <input
@@ -652,6 +667,33 @@ export function MedicationScanPage({
             />
           </label>
         </div>
+            </div>
+
+            {activeRegistrationMode === "photo" && (
+              <div className="ocr-result-card inline-ocr-card">
+                <div className="section-heading">
+                  <p className="eyebrow">인식 결과</p>
+                  <h3>OCR 결과와 후보</h3>
+                </div>
+                <textarea
+                  aria-label="OCR 원문"
+                  onChange={(event) => setOcrText(event.target.value)}
+                  placeholder="OCR 결과가 여기에 표시됩니다. 잘못 인식된 약명은 직접 수정할 수 있습니다."
+                  rows={5}
+                  value={ocrText}
+                />
+                <p className="muted">OCR 신뢰도: {ocrConfidence || 0}%</p>
+                <div className="tag-list">
+                  {candidates.map((candidate) => (
+                    <button className="tag-button" key={candidate} onClick={() => setManualName(candidate)} type="button">
+                      {candidate}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="db-match-card inline-db-card">
         <div className="match-toolbar">
           <div>
             <strong>검색 후보 {filteredMatches.length}개</strong>
@@ -742,7 +784,10 @@ export function MedicationScanPage({
             {isSaving ? "저장 중..." : "임시약으로 저장"}
           </button>
         </div>
-      </section>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

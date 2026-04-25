@@ -188,7 +188,6 @@ export function AppShell({
                 </div>
               )}
             </div>
-            <ThemeToggle onToggle={onThemeToggle} theme={theme} />
             <div className="profile-switcher">
               <button
                 aria-expanded={isProfileMenuOpen}
@@ -221,12 +220,15 @@ export function AppShell({
                       <span>{profileRoleLabel(profile, familyMembers, user)}</span>
                     </button>
                   ))}
+                  <div className="profile-menu-actions">
+                    <ThemeToggle onToggle={onThemeToggle} theme={theme} />
+                    <button className="ghost-button" onClick={onLogout} type="button">
+                      로그아웃
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-            <button className="ghost-button logout-button" onClick={onLogout} type="button">
-              로그아웃
-            </button>
           </div>
         </header>
 

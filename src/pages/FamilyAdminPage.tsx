@@ -66,6 +66,7 @@ export function FamilyAdminPage({
   });
   const [petSaveNote, setPetSaveNote] = useState("");
   const [isMemberFormOpen, setIsMemberFormOpen] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState(familyMembers[0]?.id || "");
   const [memberForm, setMemberForm] = useState({
     displayName: "",
     email: "",
@@ -80,6 +81,9 @@ export function FamilyAdminPage({
 
   useEffect(() => {
     setDraftMembers(familyMembers);
+    setSelectedMemberId((current) =>
+      familyMembers.some((member) => member.id === current) ? current : familyMembers[0]?.id || "",
+    );
   }, [familyMembers]);
 
   useEffect(() => {
@@ -356,57 +360,54 @@ export function FamilyAdminPage({
     );
   }
 
-  return (
-    <div className="admin-layout">
-      <section className="card">
-        <div className="section-heading">
-          <p className="eyebrow">가족공간</p>
-          <h2>{workspace.name}</h2>
-          <p className="muted">
-            현재 역할: {roleLabel(user.familyRole)}. 대표자는 가족 전체의 약 정보를 확인하고 이름, 이메일, 권한을 수정할 수 있습니다.
-          </p>
-        </div>
-        <div className="stat-grid">
-          <div className="stat-card"><span>확정 약</span><strong>{medications.length}</strong></div>
-          <div className="stat-card"><span>임시약</span><strong>{temporaryMedications.length}</strong></div>
-          <div className="stat-card"><span>OCR 기록</span><strong>{scans.length}</strong></div>
-        </div>
-      </section>
+  const selectedMember = draftMembers.find((member) => member.id === selectedMemberId) || draftMembers[0];
+  const selectedMemberProfile = selectedMember
+    ? careProfiles.find((profile) => profile.id === selectedMember.careProfileId)
+    : undefined;
+  const familyCareProfiles = careProfiles.filter((profile) => profile.type !== "pet");
+  const pendingInvitations = familyInvitations.filter((invitation) => invitation.status === "pending");
 
-      <section className="card">
-        <div className="section-heading split-heading">
-          <div>
-            <p className="eyebrow">초대와 권한</p>
-            <h2>가족 구성원 관리</h2>
-            <p className="muted">
-              초대 즉시 관리대상이 만들어지고, 상대가 직접 수락해야 가족공간 계정으로 연결됩니다.
-              상대의 개인공간 기록은 그대로 유지되고, 복사 여부는 수락할 때 선택합니다.
-            </p>
-          </div>
-          <button
-            className={isMemberFormOpen ? "ghost-button pet-toggle-button is-open" : "ghost-button pet-toggle-button"}
-            onClick={() => setIsMemberFormOpen((current) => !current)}
-            type="button"
-          >
-            {isMemberFormOpen ? "초대 접기" : "가족 초대"}
-          </button>
+  return (
+    <div className="family-admin-reference-page">
+      <section className="family-member-list-panel">
+        <div className="section-heading">
+          <p className="eyebrow">Family</p>
+          <h2>가족 구성원</h2>
+          <p className="muted">가족을 선택해 기본 정보와 보기 권한을 관리합니다.</p>
         </div>
-        <div className={isPersonalOnlyWorkspace ? "family-share-status needs-action" : "family-share-status"}>
-          <div>
-            <strong>{isPersonalOnlyWorkspace ? "아직 개인공간에 가깝습니다" : "가족공간 공유 중"}</strong>
-            <p>
-              {isPersonalOnlyWorkspace
-                ? "가족 초대를 만들고 상대가 직접 수락해야 같은 가족공간의 약 기록을 함께 봅니다. 상대의 기존 개인공간 기록은 자동으로 합쳐지지 않습니다."
-                : "연결된 가족 계정이 같은 가족공간을 보고 있습니다. 가족구성원 권한은 아래에서 조정할 수 있습니다."}
-            </p>
-          </div>
-          <div className="family-share-metrics" aria-label="가족공간 연결 상태">
-            <span>연결 {connectedMemberCount}명</span>
-            <span>초대 대기 {pendingInvitationCount}건</span>
-          </div>
+        <div className="reference-member-list" role="listbox" aria-label="가족 구성원 선택">
+          {draftMembers.map((member) => {
+            const profile = careProfiles.find((item) => item.id === member.careProfileId);
+            return (
+              <button
+                aria-selected={member.id === selectedMember?.id}
+                className={member.id === selectedMember?.id ? "reference-member-button active" : "reference-member-button"}
+                key={member.id}
+                onClick={() => setSelectedMemberId(member.id)}
+                role="option"
+                type="button"
+              >
+                <span className="reference-avatar" aria-hidden="true">{memberAvatar(member)}</span>
+                <span>
+                  <strong>{member.displayName}</strong>
+                  <small>{roleLabel(member.role)} · {profileRelationshipLabel(profile)}</small>
+                </span>
+                <em>{member.userId ? "연결" : "대기"}</em>
+              </button>
+            );
+          })}
         </div>
+
+        <button
+          className={isMemberFormOpen ? "ghost-button reference-add-button is-open" : "ghost-button reference-add-button"}
+          onClick={() => setIsMemberFormOpen((current) => !current)}
+          type="button"
+        >
+          {isMemberFormOpen ? "가족 추가 접기" : "+ 가족 추가"}
+        </button>
+
         {isMemberFormOpen && (
-          <div className="collapsible-panel member-invite-panel">
+          <div className="collapsible-panel member-invite-panel reference-invite-panel">
             <div className="member-edit-fields">
               <label>
                 이름
@@ -443,12 +444,39 @@ export function FamilyAdminPage({
             </div>
           </div>
         )}
+      </section>
+
+      <section className="family-permission-panel">
+        <div className="section-heading split-heading">
+          <div>
+            <p className="eyebrow">Members</p>
+            <h2>가족 관리</h2>
+            <p className="muted">
+              가족 구성원을 관리하고 약 관련 화면 접근 권한을 조정할 수 있습니다.
+            </p>
+          </div>
+          <div className="family-share-metrics" aria-label="가족공간 연결 상태">
+            <span>연결 {connectedMemberCount}명</span>
+            <span>초대 대기 {pendingInvitationCount}건</span>
+          </div>
+        </div>
+
+        <div className={isPersonalOnlyWorkspace ? "family-share-status needs-action" : "family-share-status"}>
+          <div>
+            <strong>{isPersonalOnlyWorkspace ? "가족 초대가 필요합니다" : "가족공간 공유 중"}</strong>
+            <p>
+              {isPersonalOnlyWorkspace
+                ? "상대가 초대를 수락해야 같은 가족공간의 복용 기록을 함께 볼 수 있습니다."
+                : "연결된 가족 계정이 같은 가족공간을 보고 있습니다."}
+            </p>
+          </div>
+          <strong>{workspace.name}</strong>
+        </div>
+
         {memberSaveNote && <span className="save-note saved-pop">{memberSaveNote}</span>}
-        {familyInvitations.filter((invitation) => invitation.status === "pending").length > 0 && (
+        {pendingInvitations.length > 0 && (
           <div className="pending-invite-list" aria-label="대기 중인 가족 초대">
-            {familyInvitations
-              .filter((invitation) => invitation.status === "pending")
-              .map((invitation) => (
+            {pendingInvitations.map((invitation) => (
                 <article className="pending-invite-card" key={invitation.id}>
                   <div>
                     <strong>{invitation.displayName}</strong>
@@ -470,31 +498,51 @@ export function FamilyAdminPage({
               ))}
           </div>
         )}
-        <div className="member-edit-list">
-          {draftMembers.map((member) => (
-            <article className="member-edit-card" key={member.id}>
+
+        {selectedMember && (
+          <div className="reference-family-editor">
+            <aside className="selected-family-profile">
+              <span className="reference-avatar large" aria-hidden="true">{memberAvatar(selectedMember)}</span>
+              <strong>{selectedMember.displayName}</strong>
+              <small>{profileRelationshipLabel(selectedMemberProfile)}</small>
+              <dl>
+                <div>
+                  <dt>권한</dt>
+                  <dd>{roleLabel(selectedMember.role)}</dd>
+                </div>
+                <div>
+                  <dt>이메일</dt>
+                  <dd>{selectedMember.email}</dd>
+                </div>
+                <div>
+                  <dt>연결 상태</dt>
+                  <dd>{memberConnectionLabel(selectedMember)}</dd>
+                </div>
+              </dl>
+            </aside>
+
+            <div className="selected-family-controls">
               <div className="member-edit-head">
                 <div>
-                  <strong>{member.displayName}</strong>
-                  <span>{roleLabel(member.role)}</span>
+                  <strong>기본 정보</strong>
+                  <span>{selectedMember.displayName}님의 계정과 역할을 관리합니다.</span>
                 </div>
-                <span className={memberConnectionClass(member)}>{memberConnectionLabel(member)}</span>
                 <div className="member-row-actions">
                   <button
-                    className={savedMemberId === member.id ? "primary-button table-action is-saved" : "primary-button table-action"}
-                    onClick={() => saveMember(member)}
+                    className={savedMemberId === selectedMember.id ? "primary-button table-action is-saved" : "primary-button table-action"}
+                    onClick={() => saveMember(selectedMember)}
                     type="button"
                   >
                     저장
                   </button>
-                  {member.role !== "owner" && (
+                  {selectedMember.role !== "owner" && (
                     <button
                       className="danger-button table-action"
-                      disabled={deletingMemberId === member.id}
-                      onClick={() => deleteFamilyMember(member)}
+                      disabled={deletingMemberId === selectedMember.id}
+                      onClick={() => deleteFamilyMember(selectedMember)}
                       type="button"
                     >
-                      {deletingMemberId === member.id ? "삭제 중" : "삭제"}
+                      {deletingMemberId === selectedMember.id ? "삭제 중" : "삭제"}
                     </button>
                   )}
                 </div>
@@ -503,30 +551,30 @@ export function FamilyAdminPage({
                 <label>
                   이름
                   <input
-                    aria-label={`${member.displayName} 이름`}
+                    aria-label={`${selectedMember.displayName} 이름`}
                     onChange={(event) =>
-                      updateDraftMember(member.id, { displayName: event.target.value })
+                      updateDraftMember(selectedMember.id, { displayName: event.target.value })
                     }
-                    value={member.displayName}
+                    value={selectedMember.displayName}
                   />
                 </label>
                 <label>
                   이메일
                   <input
-                    aria-label={`${member.displayName} 이메일`}
-                    disabled={!canEditMemberEmail(member)}
+                    aria-label={`${selectedMember.displayName} 이메일`}
+                    disabled={!canEditMemberEmail(selectedMember)}
                     onChange={(event) =>
-                      updateDraftMember(member.id, { email: event.target.value })
+                      updateDraftMember(selectedMember.id, { email: event.target.value })
                     }
                     title={
-                      canEditMemberEmail(member)
+                      canEditMemberEmail(selectedMember)
                         ? "초대 전 로그인 이메일을 수정할 수 있습니다."
                         : "이미 연결된 계정의 로그인 이메일은 변경할 수 없습니다."
                     }
                     type="email"
-                    value={member.email}
+                    value={selectedMember.email}
                   />
-                  {!canEditMemberEmail(member) && (
+                  {!canEditMemberEmail(selectedMember) && (
                     <small className="field-hint">
                       로그인 이메일 변경은 삭제 후 새 초대로 진행합니다.
                     </small>
@@ -535,12 +583,12 @@ export function FamilyAdminPage({
                 <label>
                   권한
                   <select
-                    aria-label={`${member.displayName} 권한`}
-                    disabled={member.role === "owner"}
+                    aria-label={`${selectedMember.displayName} 권한`}
+                    disabled={selectedMember.role === "owner"}
                     onChange={(event) =>
-                      updateDraftMember(member.id, { role: event.target.value as FamilyRole })
+                      updateDraftMember(selectedMember.id, { role: event.target.value as FamilyRole })
                     }
-                    value={member.role}
+                    value={selectedMember.role}
                   >
                     <option value="owner">가족대표</option>
                     <option value="manager">가족관리자</option>
@@ -548,34 +596,44 @@ export function FamilyAdminPage({
                   </select>
                 </label>
               </div>
-              <div className="member-access-block">
-                <strong>다른 가족 정보 보기 권한</strong>
-                {member.role === "owner" || member.role === "manager" ? (
-                  <p className="muted">이 역할은 가족 전체 프로필을 기본으로 볼 수 있습니다.</p>
-                ) : (
-                  <div className="access-chip-list">
-                    {careProfiles.map((profile) => {
-                      const ownProfileIds = ownProfileIdsForMember(member, careProfiles);
-                      const isOwnProfile = ownProfileIds.includes(profile.id);
-                      const checked = normalizedAccessibleProfileIds(member, careProfiles).includes(profile.id);
-                      return (
-                        <label className={checked ? "access-chip is-selected" : "access-chip"} key={`${member.id}-${profile.id}`}>
+
+              <div className="reference-permission-table" aria-label={`${selectedMember.displayName} 권한 설정`}>
+                <div className="permission-table-head">
+                  <span>구성원</span>
+                  <span>약 관리</span>
+                  <span>복용 기록</span>
+                  <span>복약 알림</span>
+                  <span>리포트 출력</span>
+                </div>
+                {familyCareProfiles.map((profile) => {
+                  const ownProfileIds = ownProfileIdsForMember(selectedMember, careProfiles);
+                  const isOwnProfile = ownProfileIds.includes(profile.id);
+                  const canView = normalizedAccessibleProfileIds(selectedMember, careProfiles).includes(profile.id);
+                  const disabled = selectedMember.role === "owner" || selectedMember.role === "manager" || isOwnProfile;
+                  return (
+                    <div className="permission-table-row" key={profile.id}>
+                      <span className="permission-member-cell">
+                        <span className="reference-avatar tiny" aria-hidden="true">{profileAvatar(profile)}</span>
+                        <strong>{profile.name}</strong>
+                      </span>
+                      {["약 관리", "복용 기록", "복약 알림", "리포트 출력"].map((label) => (
+                        <label className="permission-checkbox" key={`${profile.id}-${label}`}>
                           <input
-                            checked={checked}
-                            disabled={isOwnProfile}
-                            onChange={() => toggleProfileAccess(member, profile.id)}
+                            checked={canView}
+                            disabled={disabled}
+                            onChange={() => toggleProfileAccess(selectedMember, profile.id)}
                             type="checkbox"
                           />
-                          <span>{profile.name}</span>
+                          <span>{label}</span>
                         </label>
-                      );
-                    })}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
-            </article>
-          ))}
-        </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="card">
@@ -791,6 +849,28 @@ function petSummaryLine(profile: CareProfile): string {
   ]
     .filter(Boolean)
     .join(" · ") || "등록된 상세 정보 없음";
+}
+
+function profileRelationshipLabel(profile?: CareProfile): string {
+  if (!profile) return "가족";
+  if (profile.type === "self") return "본인";
+  if (profile.type === "parent") return profile.ageGroup === "60" ? "부모님" : "가족";
+  if (profile.type === "child") return "자녀";
+  return "반려동물";
+}
+
+function memberAvatar(member: FamilyMember): string {
+  if (member.role === "owner") return "👨";
+  if (member.role === "manager") return "👩";
+  const seed = (member.displayName || member.id).charCodeAt(0) % 4;
+  return ["👩", "👨", "👦", "👧"][seed] || "🙂";
+}
+
+function profileAvatar(profile: CareProfile): string {
+  if (profile.type === "pet") return "🐶";
+  if (profile.type === "parent") return profile.ageGroup === "60" ? "👴" : "👨";
+  if (profile.type === "child") return "👦";
+  return "👤";
 }
 
 function ownProfileIdsForMember(member: FamilyMember, profiles: CareProfile[]): string[] {

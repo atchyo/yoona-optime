@@ -195,6 +195,42 @@ export function ReportsPage({
           <p className="empty-panel">리포트로 만들 관리대상이 없습니다.</p>
         )}
       </section>
+
+      <aside className="card report-setting-panel">
+        <p className="eyebrow">Report Settings</p>
+        <h2>리포트 설정</h2>
+        <label>
+          대상 선택
+          <select
+            aria-label="리포트 대상 선택"
+            onChange={(event) => setSelectedProfileId(event.target.value)}
+            value={selectedProfile?.id || ""}
+          >
+            {careProfiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <fieldset className="report-option-group">
+          <legend>기간 선택</legend>
+          <label><input defaultChecked name="period" type="radio" /> 현재</label>
+          <label><input name="period" type="radio" /> 최근 1개월</label>
+          <label><input name="period" type="radio" /> 최근 3개월</label>
+          <label><input name="period" type="radio" /> 직접 선택</label>
+        </fieldset>
+        <div className="report-date-range">
+          <input aria-label="시작일" type="date" />
+          <input aria-label="종료일" type="date" />
+        </div>
+        <button className="primary-button wide" onClick={() => window.print()} type="button">
+          PDF 다운로드
+        </button>
+        <button className="ghost-button wide" onClick={() => window.print()} type="button">
+          인쇄하기
+        </button>
+      </aside>
     </div>
   );
 }

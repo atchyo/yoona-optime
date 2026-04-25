@@ -72,6 +72,11 @@ export function DashboardPage({
 
   return (
     <div className="dashboard-home">
+      <section className="mobile-dashboard-greeting">
+        <h1>안녕하세요, {currentProfile.name}님! 👋</h1>
+        <p>오늘도 우리 가족의 건강한 하루를 응원합니다.</p>
+      </section>
+
       <section className="summary-grid">
         <SummaryCard icon="pill" label="복용 중인 약" value={`${medications.length}개`} action="전체 보기" onClick={onNavigateScan} />
         <SummaryCard icon="bell" label="오늘 복용 예정" value={`${todaySchedules.length}개`} action="상세 보기" onClick={onNavigateReminders} />

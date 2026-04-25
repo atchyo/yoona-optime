@@ -216,19 +216,30 @@ export function RemindersPage({
 
       <aside className="reminder-side">
         <section className="card compact-card">
-          <p className="eyebrow">Recent Logs</p>
-          <h2>최근 복용 기록</h2>
-          <ul className="timeline-list">
-            {profileLogs.map((log) => {
-              const medication = medications.find((item) => item.id === log.medicationId);
-              return (
-                <li key={log.id}>
-                  {medication?.productName || "삭제된 약"} · {formatTakenAt(log.takenAt)}
-                </li>
-              );
-            })}
-          </ul>
-          {!profileLogs.length && <p className="muted">아직 복용 완료 기록이 없습니다.</p>}
+          <p className="eyebrow">Alert Settings</p>
+          <h2>알림 설정</h2>
+          <label>
+            알림 사전
+            <select defaultValue="10">
+              <option value="0">정시 알림</option>
+              <option value="10">10분 전</option>
+              <option value="30">30분 전</option>
+            </select>
+          </label>
+          <div className="reminder-check-list">
+            <label><input defaultChecked type="checkbox" /> 푸시 알림</label>
+            <label><input defaultChecked type="checkbox" /> 이메일</label>
+            <label><input type="checkbox" /> SMS</label>
+          </div>
+          <label>
+            조용 시간
+            <div className="quiet-time-row">
+              <input defaultValue="22:00" type="time" />
+              <input defaultValue="07:00" type="time" />
+            </div>
+          </label>
+          <p className="muted">이 시간에는 알림을 보내지 않습니다.</p>
+          <button className="primary-button wide" type="button">저장</button>
         </section>
 
         <section className="card compact-card">
@@ -243,6 +254,22 @@ export function RemindersPage({
             ))}
           </ul>
           {!reviewMeds.length && <p className="muted">현재 검토일이 지난 약은 없습니다.</p>}
+        </section>
+
+        <section className="card compact-card recent-log-card">
+          <p className="eyebrow">Recent Logs</p>
+          <h2>최근 기록</h2>
+          <ul className="timeline-list">
+            {profileLogs.map((log) => {
+              const medication = medications.find((item) => item.id === log.medicationId);
+              return (
+                <li key={log.id}>
+                  {medication?.productName || "삭제된 약"} · {formatTakenAt(log.takenAt)}
+                </li>
+              );
+            })}
+          </ul>
+          {!profileLogs.length && <p className="muted">아직 복용 완료 기록이 없습니다.</p>}
         </section>
       </aside>
     </div>
