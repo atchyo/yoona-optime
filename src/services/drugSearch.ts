@@ -19,8 +19,8 @@ interface CatalogSearchRow {
 
 const CATALOG_SELECT_COLUMNS =
   "source, source_record_id, category, product_name, manufacturer, ingredients, dosage_form, efficacy, usage, warnings, interactions, search_text, search_compact";
-const DIRECT_RESULT_LIMIT = 20;
-const TOKEN_QUERY_LIMIT = 120;
+const DIRECT_RESULT_LIMIT = 50;
+const TOKEN_QUERY_LIMIT = 180;
 
 export interface DrugCatalogSyncSummary {
   source: string;

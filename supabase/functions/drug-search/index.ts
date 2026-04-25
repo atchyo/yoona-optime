@@ -44,9 +44,9 @@ let healthFunctionalFoodCache:
 const HEALTH_FUNCTIONAL_FOOD_PAGE_SIZE = 500;
 const HEALTH_FUNCTIONAL_FOOD_MAX_PAGES = 20;
 const HEALTH_FUNCTIONAL_FOOD_CACHE_TTL_MS = 1000 * 60 * 30;
-const RESULT_LIMIT = 20;
-const CATALOG_QUERY_LIMIT = 80;
-const CATALOG_TOKEN_QUERY_LIMIT = 120;
+const RESULT_LIMIT = 50;
+const CATALOG_QUERY_LIMIT = 180;
+const CATALOG_TOKEN_QUERY_LIMIT = 180;
 const CATALOG_SELECT_COLUMNS =
   "source, source_record_id, category, product_name, manufacturer, ingredients, dosage_form, efficacy, usage, warnings, interactions, search_text, search_compact";
 
