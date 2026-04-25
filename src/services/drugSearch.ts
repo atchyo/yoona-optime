@@ -192,7 +192,12 @@ function scoreCatalogRow(query: string, tokens: string[], row: CatalogSearchRow)
 }
 
 function normalizeName(value: string): string {
-  return value.toLowerCase().replace(/[\s\-_/()[\].,]/g, "");
+  return value
+    .toLowerCase()
+    .replace(/[\s\-_/()[\].,]/g, "")
+    .replace(/vitamind3|비타민디3/g, "비타민d3")
+    .replace(/vitamind|비타민디/g, "비타민d")
+    .replace(/omega3|오메가쓰리/g, "오메가3");
 }
 
 function mapCatalogRow(query: string, row: CatalogSearchRow): DrugDatabaseMatch {
