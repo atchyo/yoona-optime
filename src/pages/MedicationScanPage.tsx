@@ -407,7 +407,7 @@ export function MedicationScanPage({
         )}
       </section>
 
-      <section className="card scan-card">
+      <section className="card scan-card registration-card">
         <div className="section-heading">
           <p className="eyebrow">사진 OCR</p>
           <h2>사진/OCR 등록</h2>
@@ -512,7 +512,7 @@ export function MedicationScanPage({
 
       </section>
 
-      <section className="card">
+      <section className="card ocr-result-card">
         <div className="section-heading">
           <p className="eyebrow">인식 결과</p>
           <h2>OCR 결과와 후보</h2>
@@ -534,7 +534,7 @@ export function MedicationScanPage({
         </div>
       </section>
 
-      <section className="card full-span">
+      <section className="card full-span db-match-card">
         <div className="section-heading">
           <p className="eyebrow">공식 약DB</p>
           <h2>공식 DB 후보 확인</h2>

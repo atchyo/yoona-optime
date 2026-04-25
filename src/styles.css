@@ -4089,6 +4089,291 @@ td select {
   }
 }
 
+/* Mockup-aligned product surface refresh */
+.content-shell {
+  width: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+}
+
+.page-content {
+  overflow-x: hidden;
+}
+
+.sidebar {
+  border-right: 1px solid color-mix(in srgb, var(--color-border) 74%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 90%, var(--color-primary-soft));
+}
+
+:root[data-theme="dark"] .sidebar {
+  background: color-mix(in srgb, var(--color-surface) 92%, #000000);
+}
+
+.brand-icon {
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: 0 12px 28px rgba(255, 122, 8, 0.16);
+}
+
+.sidebar-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 190px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-primary-soft) 44%, var(--color-surface)), var(--color-surface));
+  padding: 18px;
+}
+
+.sidebar-card::after {
+  position: absolute;
+  right: -28px;
+  bottom: -34px;
+  width: 132px;
+  height: 132px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 34% 34%, #ffd7b8 0 13%, transparent 14%),
+    radial-gradient(circle at 66% 34%, #cfe2ff 0 13%, transparent 14%),
+    radial-gradient(circle at 50% 68%, #ffe5b8 0 16%, transparent 17%),
+    color-mix(in srgb, var(--color-primary-soft) 62%, transparent);
+  content: "";
+  opacity: 0.84;
+  transform: rotate(-8deg);
+}
+
+.topbar-title h1 {
+  max-width: 980px;
+  font-size: 1.74rem;
+  line-height: 1.24;
+}
+
+.topbar-title p:last-child {
+  max-width: 860px;
+}
+
+.topbar-actions {
+  align-items: center;
+}
+
+.workspace-chip,
+.profile-switcher-button {
+  min-height: 46px;
+}
+
+.profile-switcher-button {
+  border-color: color-mix(in srgb, var(--color-border) 82%, var(--color-primary));
+}
+
+.card,
+.login-card,
+.summary-card,
+.match-card,
+.medication-table-row,
+.reminder-table-row,
+.profile-card {
+  border-color: color-mix(in srgb, var(--color-border) 86%, var(--color-primary));
+}
+
+.scan-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.45fr);
+}
+
+.db-match-card {
+  order: 1;
+}
+
+.registration-card {
+  order: 2;
+}
+
+.ocr-result-card {
+  order: 3;
+}
+
+.medication-manager-card {
+  order: 4;
+}
+
+@media (min-width: 1181px) {
+  .db-match-card,
+  .medication-manager-card {
+    grid-column: 1 / -1;
+  }
+
+  .registration-card {
+    grid-column: 1;
+  }
+
+  .ocr-result-card {
+    grid-column: 2;
+  }
+}
+
+.db-match-card .section-heading {
+  max-width: 980px;
+}
+
+.manual-search {
+  margin-bottom: 12px;
+}
+
+.manual-search input,
+.manual-search .primary-button {
+  min-height: 58px;
+}
+
+.manual-search .primary-button {
+  min-width: 144px;
+  font-size: 1.02rem;
+}
+
+.scan-status {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.scan-status strong {
+  white-space: nowrap;
+}
+
+.registration-options {
+  align-items: end;
+}
+
+.match-grid {
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+}
+
+.match-card {
+  min-height: 246px;
+}
+
+.match-card strong {
+  font-size: 1.02rem;
+  word-break: keep-all;
+}
+
+.match-card p {
+  line-height: 1.5;
+}
+
+.match-card .primary-button {
+  min-height: 50px;
+}
+
+.medication-table-row {
+  grid-template-columns: minmax(260px, 1.4fr) 160px minmax(220px, 1fr) auto;
+}
+
+.profile-card h2,
+.summary-card strong,
+.schedule-row strong,
+.match-card strong {
+  color: var(--color-text);
+}
+
+.empty-match-note {
+  max-width: 980px;
+}
+
+.dashboard-main-grid {
+  align-items: stretch;
+}
+
+.schedule-card,
+.interaction-card,
+.family-overview-card,
+.pet-overview-card,
+.compact-card {
+  min-width: 0;
+}
+
+.schedule-row > div {
+  min-width: 0;
+}
+
+.schedule-row strong {
+  overflow-wrap: anywhere;
+}
+
+.page-grid {
+  align-items: stretch;
+}
+
+.profile-card {
+  min-width: 0;
+  align-content: start;
+}
+
+.profile-actions {
+  margin-top: auto;
+}
+
+@media (max-width: 1040px) {
+  .content-shell {
+    max-width: none;
+  }
+
+  .topbar-title h1 {
+    font-size: 1.42rem;
+  }
+
+  .topbar-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .topbar-help-button,
+  .logout-button {
+    display: none;
+  }
+
+  .scan-layout,
+  .registration-options,
+  .medication-table-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .topbar-title h1 {
+    font-size: 1.28rem;
+  }
+
+  .topbar-actions {
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .topbar-icon-button,
+  .theme-toggle {
+    width: 46px;
+  }
+
+  .theme-toggle > span:last-child {
+    display: none;
+  }
+
+  .summary-card {
+    min-height: 116px;
+  }
+
+  .manual-search .primary-button {
+    width: 100%;
+  }
+
+  .match-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .match-card {
+    min-height: 220px;
+  }
+
+  .scan-status {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
   .sidebar,
   .topbar,
