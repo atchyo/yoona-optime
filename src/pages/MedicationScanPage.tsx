@@ -11,6 +11,7 @@ import type {
   OcrScan,
   TemporaryMedication,
 } from "../types";
+import { ingredientSummary, sourceLabel } from "../utils/medicationDisplay";
 
 interface MedicationScanPageProps {
   careProfiles: CareProfile[];
@@ -50,6 +51,7 @@ export function MedicationScanPage({
   const [matchDisplayCount, setMatchDisplayCount] = useState(MATCH_PAGE_SIZE);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [savingMatchId, setSavingMatchId] = useState("");
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
@@ -107,6 +109,9 @@ export function MedicationScanPage({
 
   const selectedProfileMedications = medications.filter(
     (medication) => medication.careProfileId === selectedProfile.id,
+  );
+  const registeredMedicationKeys = new Set(
+    selectedProfileMedications.map((medication) => medicationKey(medication.source, medication.productName)),
   );
   const sourceOptions = Array.from(new Set(matches.map((match) => match.source)));
   const filteredMatches =
@@ -279,6 +284,8 @@ export function MedicationScanPage({
 
     savingLockRef.current = true;
     setIsSaving(true);
+    setSavingMatchId(match.id);
+    const isRegistered = registeredMedicationKeys.has(medicationKey(match.source, match.productName));
     setProgress(`${match.productName} 저장 중`);
     try {
       const scan = buildScan("confirmed", matches);
@@ -301,11 +308,12 @@ export function MedicationScanPage({
       );
       resetSearchArtifacts();
       resetRegistrationOptions();
-      setProgress(`${match.productName} 등록 완료`);
+      setProgress(isRegistered ? `${match.productName} 기존 기록 갱신 완료` : `${match.productName} 등록 완료`);
     } catch (error) {
       setProgress(error instanceof Error ? error.message : "약 저장 중 문제가 발생했습니다.");
     } finally {
       setIsSaving(false);
+      setSavingMatchId("");
       savingLockRef.current = false;
     }
   }
@@ -379,7 +387,7 @@ export function MedicationScanPage({
               <article className="medication-table-row" key={medication.id}>
                 <div>
                   <strong>{medication.productName}</strong>
-                  <span>{medication.ingredients.map(formatIngredient).join(", ") || "성분 미등록"}</span>
+                  <span>{ingredientSummary(medication.ingredients)}</span>
                 </div>
                 <span>{sourceLabel(medication.source)}</span>
                 <span>{medication.instructions || medication.dosage || "복용 정보 미등록"}</span>
@@ -620,20 +628,25 @@ export function MedicationScanPage({
           </div>
         </div>
         <div className="match-grid">
-          {visibleMatches.map((match) => (
-            <article className="match-card" key={match.id}>
-              <div>
-                <span className="source-badge">{sourceLabel(match.source)}</span>
-                <strong>{match.productName}</strong>
-                <p>{match.manufacturer || "제조사 정보 없음"} · 신뢰도 {Math.round(match.confidence * 100)}%</p>
-                <p>{match.ingredients.map((ingredient) => `${ingredient.name} ${ingredient.amount || ""}`).join(", ")}</p>
-                {match.efficacy && <p>{match.efficacy}</p>}
-              </div>
-              <button className="primary-button" disabled={isSaving} onClick={() => confirmMatch(match)} type="button">
-                {isSaving ? "저장 중..." : "이 약으로 등록"}
-              </button>
-            </article>
-          ))}
+          {visibleMatches.map((match) => {
+            const isRegistered = registeredMedicationKeys.has(medicationKey(match.source, match.productName));
+            const isThisSaving = savingMatchId === match.id;
+
+            return (
+              <article className={isRegistered ? "match-card already-registered" : "match-card"} key={match.id}>
+                <div>
+                  <span className="source-badge">{sourceLabel(match.source)}</span>
+                  <strong>{match.productName}</strong>
+                  <p>{match.manufacturer || "제조사 정보 없음"} · 신뢰도 {Math.round(match.confidence * 100)}%</p>
+                  <p>{ingredientSummary(match.ingredients)}</p>
+                  {match.efficacy && <p>{match.efficacy}</p>}
+                </div>
+                <button className="primary-button" disabled={isSaving} onClick={() => confirmMatch(match)} type="button">
+                  {isThisSaving ? "저장 중..." : isRegistered ? "등록 정보 갱신" : "이 약으로 등록"}
+                </button>
+              </article>
+            );
+          })}
         </div>
         {hasMoreMatches && (
           <div className="match-more-row">
@@ -683,16 +696,6 @@ function dedupeMatches(matches: DrugDatabaseMatch[]): DrugDatabaseMatch[] {
   return Array.from(new Map(matches.map((match) => [match.id, match])).values());
 }
 
-function sourceLabel(source: DrugDatabaseMatch["source"]): string {
-  if (source === "mfds_permit") return "식약처 허가정보";
-  if (source === "mfds_easy") return "e약은요";
-  if (source === "mfds_health") return "건강기능식품정보";
-  if (source === "rxnorm") return "RxNorm";
-  if (source === "dailymed") return "DailyMed";
-  if (source === "openfda") return "openFDA";
-  return "수기입력";
-}
-
-function formatIngredient(ingredient: Medication["ingredients"][number]): string {
-  return ingredient.amount ? `${ingredient.name} ${ingredient.amount}` : ingredient.name;
+function medicationKey(source: DrugDatabaseMatch["source"], productName: string): string {
+  return `${source}:${productName.trim().toLocaleLowerCase("ko-KR")}`;
 }

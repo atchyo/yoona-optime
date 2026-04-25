@@ -3202,6 +3202,15 @@ td select {
   box-sizing: border-box;
 }
 
+.match-card.already-registered {
+  border-color: rgba(15, 118, 110, 0.35);
+  background: color-mix(in srgb, var(--color-surface-alt) 82%, rgba(15, 118, 110, 0.12));
+}
+
+.match-card.already-registered .primary-button {
+  background: linear-gradient(135deg, #0f766e, #1677ff);
+}
+
 .match-card strong {
   min-height: auto;
   max-height: 3.7em;
