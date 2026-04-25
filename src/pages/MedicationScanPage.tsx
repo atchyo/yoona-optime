@@ -21,6 +21,8 @@ interface MedicationScanPageProps {
   onCreateTemporaryMedication: (medication: TemporaryMedication, scan: OcrScan) => Promise<void> | void;
 }
 
+const MATCH_PAGE_SIZE = 8;
+
 export function MedicationScanPage({
   careProfiles,
   currentProfile,
@@ -45,6 +47,7 @@ export function MedicationScanPage({
   const [registrationReviewAt, setRegistrationReviewAt] = useState("");
   const [activeRegistrationMode, setActiveRegistrationMode] = useState<"search" | "photo">("search");
   const [sourceFilter, setSourceFilter] = useState<DrugSource | "all">("all");
+  const [matchDisplayCount, setMatchDisplayCount] = useState(MATCH_PAGE_SIZE);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -90,6 +93,7 @@ export function MedicationScanPage({
     setPhotoName("");
     setCameraError("");
     setSourceFilter("all");
+    setMatchDisplayCount(MATCH_PAGE_SIZE);
     if (!options?.preserveManualName) {
       setManualName("");
     }
@@ -105,10 +109,17 @@ export function MedicationScanPage({
     (medication) => medication.careProfileId === selectedProfile.id,
   );
   const sourceOptions = Array.from(new Set(matches.map((match) => match.source)));
-  const visibleMatches =
+  const filteredMatches =
     sourceFilter === "all"
       ? matches
       : matches.filter((match) => match.source === sourceFilter);
+  const visibleMatches = filteredMatches.slice(0, matchDisplayCount);
+  const hasMoreMatches = visibleMatches.length < filteredMatches.length;
+
+  function changeSourceFilter(nextSource: DrugSource | "all"): void {
+    setSourceFilter(nextSource);
+    setMatchDisplayCount(MATCH_PAGE_SIZE);
+  }
 
   async function handleFile(file: File): Promise<void> {
     try {
@@ -132,6 +143,7 @@ export function MedicationScanPage({
       setProgress("약 데이터베이스 후보를 검색하는 중");
       const resultGroups = await Promise.all(nextCandidates.slice(0, 4).map(searchDrugDatabase));
       setMatches(dedupeMatches(resultGroups.flat()));
+      setMatchDisplayCount(MATCH_PAGE_SIZE);
       setProgress("사용자 확인 대기");
     } catch (error) {
       const message = error instanceof Error ? error.message : "사진 처리 중 문제가 발생했습니다.";
@@ -225,6 +237,7 @@ export function MedicationScanPage({
       const nextMatches = await searchDrugDatabase(query);
       setCandidates([query]);
       setMatches(dedupeMatches(nextMatches));
+      setMatchDisplayCount(MATCH_PAGE_SIZE);
       setProgress(
         nextMatches.length
           ? "검색 후보를 확인해 주세요."
@@ -389,7 +402,7 @@ export function MedicationScanPage({
       <section className="card scan-card">
         <div className="section-heading">
           <p className="eyebrow">사진 OCR</p>
-          <h2>약 사진 등록</h2>
+          <h2>사진/OCR 등록</h2>
           <p className="muted">사진에는 이름, 생년월일, 병원/약국 정보가 포함될 수 있습니다. 기본 저장되며 나중에 사진만 삭제할 수 있습니다.</p>
         </div>
 
@@ -518,7 +531,7 @@ export function MedicationScanPage({
           <p className="eyebrow">공식 약DB</p>
           <h2>공식 DB 후보 확인</h2>
           <p className="muted">
-            실제 공식 데이터베이스 검색 결과만 표시합니다. 관련도 높은 후보를 최대 20개까지 보여주고,
+            실제 공식 데이터베이스 검색 결과만 표시합니다. 관련도 높은 후보를 8개씩 나누어 보여주고,
             후보가 없으면 수기 입력 후 임시약으로 저장해 주세요.
           </p>
         </div>
@@ -580,11 +593,16 @@ export function MedicationScanPage({
           </label>
         </div>
         <div className="match-toolbar">
-          <strong>검색 후보 {visibleMatches.length}개</strong>
+          <div>
+            <strong>검색 후보 {filteredMatches.length}개</strong>
+            {filteredMatches.length > visibleMatches.length && (
+              <span className="match-count-copy">현재 {visibleMatches.length}개 표시 중</span>
+            )}
+          </div>
           <div className="source-filter-list">
             <button
               className={sourceFilter === "all" ? "source-filter active" : "source-filter"}
-              onClick={() => setSourceFilter("all")}
+              onClick={() => changeSourceFilter("all")}
               type="button"
             >
               전체
@@ -593,7 +611,7 @@ export function MedicationScanPage({
               <button
                 className={sourceFilter === source ? "source-filter active" : "source-filter"}
                 key={source}
-                onClick={() => setSourceFilter(source)}
+                onClick={() => changeSourceFilter(source)}
                 type="button"
               >
                 {sourceLabel(source)}
@@ -617,8 +635,19 @@ export function MedicationScanPage({
             </article>
           ))}
         </div>
+        {hasMoreMatches && (
+          <div className="match-more-row">
+            <button
+              className="ghost-button"
+              onClick={() => setMatchDisplayCount((count) => count + MATCH_PAGE_SIZE)}
+              type="button"
+            >
+              후보 더 보기
+            </button>
+          </div>
+        )}
         {!matches.length && (
-          <p className="form-note">
+          <p className="form-note empty-match-note">
             아직 공식 DB 후보가 없습니다. 검색어를 바꾸거나 아래에서 약명과 성분을 직접 입력해 저장할 수 있습니다.
           </p>
         )}

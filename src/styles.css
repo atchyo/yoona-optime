@@ -3076,6 +3076,17 @@ td select {
   margin-bottom: 12px;
 }
 
+.match-toolbar > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.match-count-copy {
+  color: var(--color-muted);
+  font-size: 0.88rem;
+}
+
 .source-filter-list {
   display: flex;
   flex-wrap: wrap;
@@ -3096,12 +3107,17 @@ td select {
 
 .match-card {
   min-height: 238px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: initial;
+  box-sizing: border-box;
 }
 
 .match-card strong {
   min-height: auto;
   max-height: 3.7em;
   -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 .source-badge {
@@ -3122,6 +3138,26 @@ td select {
 
 .match-card .primary-button {
   align-self: end;
+  justify-self: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.match-more-row {
+  display: flex;
+  justify-content: center;
+  margin: 14px 0 4px;
+}
+
+.match-more-row .ghost-button {
+  min-width: min(280px, 100%);
+  min-height: 48px;
+}
+
+.empty-match-note {
+  margin-top: 14px;
 }
 
 .medication-table-row {
