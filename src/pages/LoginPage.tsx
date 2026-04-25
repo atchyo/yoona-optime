@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ReactElement } from "react";
 import { isSupabaseConfigured } from "../config";
 import { signInWithProvider } from "../services/supabaseClient";
@@ -13,6 +14,25 @@ export function LoginPage({
   onThemeToggle,
   theme,
 }: LoginPageProps): ReactElement {
+  const [authProvider, setAuthProvider] = useState<"google" | "kakao" | "">("");
+  const [authMessage, setAuthMessage] = useState("");
+
+  async function startProviderLogin(provider: "google" | "kakao"): Promise<void> {
+    setAuthProvider(provider);
+    setAuthMessage("");
+
+    try {
+      await signInWithProvider(provider);
+    } catch (error) {
+      setAuthProvider("");
+      setAuthMessage(
+        error instanceof Error
+          ? error.message
+          : "로그인 연결 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+      );
+    }
+  }
+
   return (
     <main className="login-page">
       <section className="login-visual" aria-label="Opti-Me 소개">
@@ -43,17 +63,17 @@ export function LoginPage({
         <div className="login-actions">
           <button
             className="social-button kakao-login"
-            disabled={!isSupabaseConfigured}
-            onClick={() => void signInWithProvider("kakao")}
+            disabled={!isSupabaseConfigured || Boolean(authProvider)}
+            onClick={() => void startProviderLogin("kakao")}
             type="button"
           >
             <span className="provider-icon kakao-icon" aria-hidden="true" />
-            Kakao 로그인
+            {authProvider === "kakao" ? "Kakao 로그인 중" : "Kakao 로그인"}
           </button>
           <button
             className="social-button google-login"
-            disabled={!isSupabaseConfigured}
-            onClick={() => void signInWithProvider("google")}
+            disabled={!isSupabaseConfigured || Boolean(authProvider)}
+            onClick={() => void startProviderLogin("google")}
             type="button"
           >
             <svg className="google-icon" aria-hidden="true" viewBox="0 0 24 24">
@@ -74,9 +94,10 @@ export function LoginPage({
                 fill="#EA4335"
               />
             </svg>
-            Google 로그인
+            {authProvider === "google" ? "Google 로그인 중" : "Google 로그인"}
           </button>
         </div>
+        {authMessage && <p className="login-error-note">{authMessage}</p>}
       </section>
     </main>
   );
