@@ -797,6 +797,7 @@ export function App(): ReactElement {
             onDeleteMedication={handleDeleteMedication}
             schedules={effectiveSchedules}
             temporaryMedications={temporaryMedications}
+            user={user}
           />
         )}
         {route === "/history" && (

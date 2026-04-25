@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReactElement } from "react";
 import type {
   CareProfile,
+  DemoUser,
   FamilyMember,
   Medication,
   MedicationSchedule,
@@ -24,6 +25,7 @@ interface ProfilesPageProps {
   onDeleteMedication: (medicationId: string) => Promise<void> | void;
   schedules: MedicationSchedule[];
   temporaryMedications: TemporaryMedication[];
+  user: DemoUser;
 }
 
 export function ProfilesPage({
@@ -34,6 +36,7 @@ export function ProfilesPage({
   onDeleteMedication,
   schedules,
   temporaryMedications,
+  user,
 }: ProfilesPageProps): ReactElement {
   return (
     <section className="page-grid">
@@ -47,6 +50,7 @@ export function ProfilesPage({
           schedules={schedules}
           selected={currentProfileId === profile.id}
           temporaryCount={temporaryMedications.filter((medication) => medication.careProfileId === profile.id).length}
+          user={user}
         />
       ))}
     </section>
@@ -61,6 +65,7 @@ function ProfileCard({
   schedules,
   selected,
   temporaryCount,
+  user,
 }: {
   familyMembers: FamilyMember[];
   medications: Medication[];
@@ -69,12 +74,14 @@ function ProfileCard({
   schedules: MedicationSchedule[];
   selected: boolean;
   temporaryCount: number;
+  user: DemoUser;
 }): ReactElement {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [deletingMedicationId, setDeletingMedicationId] = useState("");
   const confirmedCount = medications.filter((medication) => medication.status === "confirmed").length;
   const reviewCount = medications.filter((medication) => medication.status === "needs_review").length + temporaryCount;
   const profileLabel = profileRoleLabel(profile, familyMembers);
+  const canDeleteMedication = canManageProfile(profile, familyMembers, user);
 
   async function requestDeleteMedication(medication: Medication): Promise<void> {
     const shouldDelete = window.confirm(`${medication.productName}을(를) ${profile.name}님의 복용약에서 삭제할까요?`);
@@ -109,14 +116,16 @@ function ProfileCard({
                 <strong>{medication.productName}</strong>
                 <small>{sourceLabel(medication.source)} · {medicationStatusLabel(medication)}</small>
               </span>
-              <button
-                className="text-danger-button"
-                disabled={deletingMedicationId === medication.id}
-                onClick={() => void requestDeleteMedication(medication)}
-                type="button"
-              >
-                {deletingMedicationId === medication.id ? "삭제 중" : "삭제"}
-              </button>
+              {canDeleteMedication && (
+                <button
+                  className="text-danger-button"
+                  disabled={deletingMedicationId === medication.id}
+                  onClick={() => void requestDeleteMedication(medication)}
+                  type="button"
+                >
+                  {deletingMedicationId === medication.id ? "삭제 중" : "삭제"}
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -141,6 +150,7 @@ function ProfileCard({
           >
             <CareReport
               medications={medications}
+              canDeleteMedication={canDeleteMedication}
               onDeleteMedication={requestDeleteMedication}
               onClose={() => setIsReportOpen(false)}
               profile={profile}
@@ -156,6 +166,7 @@ function ProfileCard({
 
 function CareReport({
   medications,
+  canDeleteMedication,
   onDeleteMedication,
   onClose,
   profile,
@@ -163,6 +174,7 @@ function CareReport({
   schedules,
 }: {
   medications: Medication[];
+  canDeleteMedication: boolean;
   onDeleteMedication: (medication: Medication) => Promise<void> | void;
   onClose: () => void;
   profile: CareProfile;
@@ -222,9 +234,11 @@ function CareReport({
                   <dd>{medicationGuidanceText(medication)}</dd>
                 </div>
               </dl>
-              <button className="danger-button report-delete-button" onClick={() => void onDeleteMedication(medication)} type="button">
-                약 삭제
-              </button>
+              {canDeleteMedication && (
+                <button className="danger-button report-delete-button" onClick={() => void onDeleteMedication(medication)} type="button">
+                  약 삭제
+                </button>
+              )}
             </article>
           ))
         ) : (
@@ -233,6 +247,19 @@ function CareReport({
       </div>
     </div>
   );
+}
+
+function canManageProfile(
+  profile: CareProfile,
+  familyMembers: FamilyMember[],
+  user: DemoUser,
+): boolean {
+  if (user.role === "admin" || user.familyRole === "owner" || user.familyRole === "manager") {
+    return true;
+  }
+
+  const member = familyMembers.find((item) => item.userId === user.id);
+  return profile.ownerUserId === user.id || profile.id === member?.careProfileId;
 }
 
 function profileRoleLabel(profile: CareProfile, familyMembers: FamilyMember[]): string {

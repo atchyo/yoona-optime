@@ -497,12 +497,23 @@ export function FamilyAdminPage({
                   이메일
                   <input
                     aria-label={`${member.displayName} 이메일`}
+                    disabled={!canEditMemberEmail(member)}
                     onChange={(event) =>
                       updateDraftMember(member.id, { email: event.target.value })
+                    }
+                    title={
+                      canEditMemberEmail(member)
+                        ? "초대 전 로그인 이메일을 수정할 수 있습니다."
+                        : "이미 연결된 계정의 로그인 이메일은 변경할 수 없습니다."
                     }
                     type="email"
                     value={member.email}
                   />
+                  {!canEditMemberEmail(member) && (
+                    <small className="field-hint">
+                      로그인 이메일 변경은 삭제 후 새 초대로 진행합니다.
+                    </small>
+                  )}
                 </label>
                 <label>
                   권한
@@ -748,6 +759,10 @@ function memberConnectionLabel(member: FamilyMember): string {
 function memberConnectionClass(member: FamilyMember): string {
   if (member.role === "owner") return "member-status-badge owner";
   return member.userId ? "member-status-badge connected" : "member-status-badge pending";
+}
+
+function canEditMemberEmail(member: FamilyMember): boolean {
+  return member.role !== "owner" && !member.userId;
 }
 
 function petSummaryLine(profile: CareProfile): string {

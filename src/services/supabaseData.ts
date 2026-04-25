@@ -746,7 +746,7 @@ export async function saveTemporaryMedication(
 
 export async function deleteRemoteMedication(medicationId: string): Promise<void> {
   const client = requireSupabase();
-  const { error } = await client.from("medications").delete().eq("id", medicationId);
+  const { error } = await client.rpc("delete_medication", { target_medication_id: medicationId });
   if (error) throw new Error(error.message);
 }
 
@@ -957,7 +957,7 @@ function isUuid(value: string): boolean {
 
 export async function deleteRemoteCareProfile(profileId: string): Promise<void> {
   const client = requireSupabase();
-  const { error } = await client.from("care_profiles").delete().eq("id", profileId);
+  const { error } = await client.rpc("delete_pet_care_profile", { target_profile_id: profileId });
   if (error) throw new Error(error.message);
 }
 

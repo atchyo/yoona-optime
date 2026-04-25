@@ -1726,6 +1726,18 @@ textarea {
   gap: 8px;
 }
 
+.member-edit-fields input:disabled,
+.member-edit-fields select:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.field-hint {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
 .member-access-block {
   display: grid;
   gap: 10px;
