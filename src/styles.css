@@ -1665,6 +1665,57 @@ textarea {
   margin: 14px 0 16px;
 }
 
+.family-share-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(22, 119, 255, 0.28);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-primary-soft) 72%, var(--color-surface));
+  color: var(--color-text);
+  padding: 13px 14px;
+  margin: 14px 0 16px;
+}
+
+.family-share-status.needs-action {
+  border-color: rgba(245, 158, 11, 0.38);
+  background: color-mix(in srgb, rgba(245, 158, 11, 0.13) 62%, var(--color-surface));
+}
+
+.family-share-status strong,
+.family-share-status p {
+  display: block;
+}
+
+.family-share-status p {
+  margin: 5px 0 0;
+  color: var(--color-muted);
+  line-height: 1.55;
+}
+
+.family-share-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.family-share-metrics span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-primary-strong);
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
 .pending-invite-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -2310,6 +2361,7 @@ td select {
   }
 
   .pending-invite-card,
+  .family-share-status,
   .invitation-card,
   .invitation-actions {
     grid-template-columns: 1fr;
@@ -2317,6 +2369,8 @@ td select {
   }
 
   .pending-invite-card > div:last-child,
+  .family-share-status,
+  .family-share-metrics,
   .invitation-actions {
     flex-direction: column;
   }

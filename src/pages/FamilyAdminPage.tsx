@@ -74,6 +74,9 @@ export function FamilyAdminPage({
   const [memberSaveNote, setMemberSaveNote] = useState("");
   const [deletingMemberId, setDeletingMemberId] = useState("");
   const [revokingInvitationId, setRevokingInvitationId] = useState("");
+  const connectedMemberCount = familyMembers.filter((member) => Boolean(member.userId)).length;
+  const pendingInvitationCount = familyInvitations.filter((invitation) => invitation.status === "pending").length;
+  const isPersonalOnlyWorkspace = connectedMemberCount <= 1;
 
   useEffect(() => {
     setDraftMembers(familyMembers);
@@ -387,6 +390,20 @@ export function FamilyAdminPage({
           >
             {isMemberFormOpen ? "초대 접기" : "가족 초대"}
           </button>
+        </div>
+        <div className={isPersonalOnlyWorkspace ? "family-share-status needs-action" : "family-share-status"}>
+          <div>
+            <strong>{isPersonalOnlyWorkspace ? "아직 개인공간에 가깝습니다" : "가족공간 공유 중"}</strong>
+            <p>
+              {isPersonalOnlyWorkspace
+                ? "가족 초대를 만들고 상대가 직접 수락해야 같은 가족공간의 약 기록을 함께 봅니다. 상대의 기존 개인공간 기록은 자동으로 합쳐지지 않습니다."
+                : "연결된 가족 계정이 같은 가족공간을 보고 있습니다. 가족구성원 권한은 아래에서 조정할 수 있습니다."}
+            </p>
+          </div>
+          <div className="family-share-metrics" aria-label="가족공간 연결 상태">
+            <span>연결 {connectedMemberCount}명</span>
+            <span>초대 대기 {pendingInvitationCount}건</span>
+          </div>
         </div>
         {isMemberFormOpen && (
           <div className="collapsible-panel member-invite-panel">
