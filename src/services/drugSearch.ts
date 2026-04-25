@@ -97,6 +97,16 @@ async function searchCatalogDirectly(query: string): Promise<DrugDatabaseMatch[]
         .sort((left, right) => compareMatches(query, left, right))
         .slice(0, DIRECT_RESULT_LIMIT);
     }
+
+    const partialRows = Array.from(rowMap.values())
+      .filter((row) => tokens.some((token) => (row.search_compact || "").includes(token)))
+      .sort((left, right) => scoreCatalogRow(query, tokens, right) - scoreCatalogRow(query, tokens, left));
+
+    if (partialRows.length) {
+      return dedupeMatches(partialRows.map((row) => mapCatalogRow(query, row)))
+        .sort((left, right) => compareMatches(query, left, right))
+        .slice(0, DIRECT_RESULT_LIMIT);
+    }
   }
 
   const compactQuery = normalizeName(query);
@@ -136,6 +146,21 @@ function buildSearchTokens(query: string): string[] {
         .filter((token) => token.length >= 2),
     ),
   ).slice(0, 6);
+}
+
+function scoreCatalogRow(query: string, tokens: string[], row: CatalogSearchRow): number {
+  const product = normalizeName(row.product_name || "");
+  const manufacturer = normalizeName(row.manufacturer || "");
+  const compact = row.search_compact || "";
+  const tokenScore = tokens.reduce((score, token) => {
+    if (product.includes(token)) return score + 5;
+    if (manufacturer.includes(token)) return score + 4;
+    if (compact.includes(token)) return score + 2;
+    return score;
+  }, 0);
+  const supplementScore = looksLikeSupplementQuery(query) && row.category === "supplement" ? 3 : 0;
+  const sourceScore = row.source === "mfds_health" ? 1.5 : row.source === "mfds_permit" ? 1 : 0;
+  return tokenScore + supplementScore + sourceScore;
 }
 
 function normalizeName(value: string): string {
