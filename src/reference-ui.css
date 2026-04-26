@@ -7947,3 +7947,744 @@ textarea {
     text-overflow: ellipsis !important;
   }
 }
+
+/* Minimal polish pass: flatten shadows, repair dark mode, and calm typography. */
+:root {
+  --om-shadow: none;
+}
+
+:root[data-theme="dark"] {
+  --om-bg: #0F172A;
+  --om-surface: #111827;
+  --om-soft: #172033;
+  --om-surface-soft: #172033;
+  --om-sidebar: #0B1220;
+  --om-border: #334155;
+  --om-border-light: #243044;
+  --om-text: #F8FAFC;
+  --om-secondary: #CBD5E1;
+  --om-muted: #94A3B8;
+  --om-soft-primary: rgba(99, 102, 241, 0.18);
+  --om-soft-blue: rgba(59, 130, 246, 0.16);
+  --om-soft-green: rgba(16, 185, 129, 0.16);
+  --om-soft-yellow: rgba(245, 158, 11, 0.16);
+  --om-soft-red: rgba(239, 68, 68, 0.14);
+  --om-soft-pet: rgba(249, 115, 22, 0.15);
+}
+
+.app-shell *,
+.login-shell * {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.app-shell :focus-visible,
+.login-shell :focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.55);
+  outline-offset: 2px;
+}
+
+body {
+  font-weight: 400 !important;
+}
+
+button,
+input,
+select,
+textarea {
+  font-weight: 500;
+}
+
+.brand-block strong,
+.topbar-title h1,
+.desktop-page-heading h2,
+.mobile-route-title h1,
+.section-heading h2,
+.row-heading h2,
+.compact-card h2,
+.report-type-panel h2,
+.report-preview-card h2,
+.report-setting-panel h2,
+.family-overview-card h2,
+.pet-overview-card h2,
+.interaction-card h2,
+.today-panel h2,
+.recent-records-card h2,
+.assistant-preview h2,
+.summary-card strong {
+  font-weight: 700 !important;
+}
+
+.nav-item,
+.mobile-tab,
+.primary-button,
+.ghost-button,
+.text-button,
+.summary-card button,
+.avatar-person,
+.status-pill,
+.safe-box,
+.report-type-button strong,
+.report-medication-title strong,
+.printable-report h3,
+.printable-report h4,
+.mobile-report-paper h3,
+.mobile-report-paper h4 {
+  font-weight: 600 !important;
+}
+
+.topbar-title p,
+.desktop-page-heading p,
+.summary-card span,
+.interaction-card p,
+.compact-card p,
+.mini-record-list,
+.report-summary-list dt,
+.report-medication-card dt,
+.report-type-button span,
+.printable-report p,
+.printable-report dd {
+  font-weight: 400 !important;
+}
+
+.content-shell {
+  padding-left: 56px !important;
+}
+
+.brand-mark {
+  overflow: visible !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+}
+
+.brand-mark-svg {
+  border-radius: 14px;
+}
+
+.sidebar-card {
+  display: grid;
+  gap: 14px;
+  min-height: auto !important;
+  padding: 14px !important;
+  border-color: var(--om-border) !important;
+  border-radius: 14px !important;
+  background: var(--om-surface) !important;
+}
+
+.sidebar-care-image {
+  display: block;
+  width: 100%;
+  height: 122px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 12px;
+}
+
+.sidebar-family-art {
+  display: none !important;
+}
+
+.sidebar-card strong {
+  margin: 0 !important;
+  font-weight: 700 !important;
+}
+
+.sidebar-card p {
+  margin: 0 !important;
+  font-weight: 400 !important;
+}
+
+.theme-toggle {
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 1px solid var(--om-border) !important;
+  border-radius: 999px !important;
+  background: var(--om-surface) !important;
+  color: var(--om-primary) !important;
+}
+
+.theme-toggle-track {
+  width: 22px !important;
+  height: 22px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.theme-toggle-track .ui-icon {
+  grid-area: 1 / 1;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.theme-toggle-track .ui-icon:last-child {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle-track .ui-icon:first-child {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle-track .ui-icon:last-child {
+  display: block;
+}
+
+.theme-toggle-knob {
+  display: none !important;
+}
+
+.nav-icon,
+.mobile-tab-icon,
+.summary-card .summary-icon,
+.summary-card .card-icon,
+.medicine-icon,
+.topbar-icon-button,
+.avatar-add,
+.report-type-button::before {
+  display: inline-grid !important;
+  place-items: center !important;
+}
+
+.ui-icon,
+.nav-icon .ui-icon,
+.mobile-tab-icon .ui-icon,
+.summary-card .ui-icon,
+.topbar-icon-button .ui-icon,
+.theme-toggle .ui-icon {
+  display: block !important;
+  margin: auto !important;
+  flex: 0 0 auto !important;
+}
+
+.summary-card {
+  align-items: center !important;
+}
+
+.summary-card .summary-icon,
+.summary-card .card-icon {
+  align-self: center !important;
+}
+
+.topbar-avatar,
+.reference-avatar,
+.member-avatar,
+.family-face,
+.avatar-person span {
+  position: relative !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  background: #DBEAFE !important;
+  border: 1px solid rgba(37, 99, 235, 0.08) !important;
+}
+
+.topbar-avatar::before,
+.reference-avatar::before,
+.member-avatar::before,
+.family-face::before,
+.avatar-person span::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 48% !important;
+  width: 68% !important;
+  height: 68% !important;
+  transform: translate(-50%, -50%) !important;
+  border-radius: 999px !important;
+  background:
+    radial-gradient(circle at 36% 58%, #111827 0 4%, transparent 4.8%),
+    radial-gradient(circle at 64% 58%, #111827 0 4%, transparent 4.8%),
+    radial-gradient(ellipse 10% 5% at 50% 73%, #EF4444 0 90%, transparent 100%),
+    radial-gradient(ellipse 42% 48% at 50% 62%, #FED7AA 0 98%, transparent 100%),
+    radial-gradient(ellipse 50% 33% at 50% 36%, #334155 0 98%, transparent 100%);
+}
+
+.topbar-avatar::after,
+.reference-avatar::after,
+.member-avatar::after,
+.family-face::after,
+.avatar-person span::after {
+  content: none !important;
+}
+
+.topbar-avatar.pet-avatar-ui,
+.reference-avatar.pet-avatar-ui,
+.member-avatar.pet-avatar-ui,
+.pet-face,
+.pet-face-mini {
+  background: #FFF7ED !important;
+  border-color: rgba(249, 115, 22, 0.28) !important;
+  color: transparent !important;
+  font-size: 0 !important;
+}
+
+.topbar-avatar.pet-avatar-ui::before,
+.reference-avatar.pet-avatar-ui::before,
+.member-avatar.pet-avatar-ui::before {
+  background:
+    radial-gradient(circle at 37% 54%, #111827 0 4.2%, transparent 5%),
+    radial-gradient(circle at 63% 54%, #111827 0 4.2%, transparent 5%),
+    radial-gradient(circle at 50% 65%, #111827 0 4.8%, transparent 5.6%),
+    linear-gradient(48deg, #FDBA74 0 48%, transparent 49%) 8% 1% / 29% 29% no-repeat,
+    linear-gradient(-48deg, #FDBA74 0 48%, transparent 49%) 92% 1% / 29% 29% no-repeat,
+    #FFF7ED !important;
+}
+
+.interaction-card {
+  border-color: var(--om-border) !important;
+  background: var(--om-surface) !important;
+}
+
+.interaction-card h2,
+.interaction-card strong {
+  color: var(--om-text) !important;
+}
+
+.interaction-card .section-heading > strong {
+  color: var(--om-danger) !important;
+}
+
+.interaction-alert {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  background: var(--om-soft-yellow) !important;
+}
+
+.safe-box {
+  border-color: var(--om-border) !important;
+  background: var(--om-soft-blue) !important;
+  color: var(--om-secondary) !important;
+}
+
+.assistant-preview,
+.chat-page,
+.chat-room-panel,
+.chat-message-list,
+.chat-input-row,
+.report-preview-card,
+.printable-report,
+.report-paper,
+.report-medication-card,
+.report-medication-card dl,
+.report-summary-list,
+.mini-record-list,
+.mini-record-list > div {
+  min-width: 0 !important;
+}
+
+.assistant-preview {
+  overflow: hidden !important;
+}
+
+.assistant-preview .chat-bubble,
+.chat-bubble,
+.chat-safety-note,
+.report-medication-card,
+.report-medication-card dd,
+.printable-report p,
+.printable-report dd,
+.mini-record-list span,
+.mini-record-list strong {
+  max-width: 100% !important;
+  overflow-wrap: anywhere !important;
+  word-break: keep-all !important;
+}
+
+.assistant-preview .primary-button,
+.chat-input-row .primary-button {
+  flex: 0 0 auto !important;
+}
+
+.chat-input-row {
+  grid-template-columns: minmax(0, 1fr) 46px !important;
+}
+
+.chat-input-row input {
+  min-width: 0 !important;
+}
+
+.report-preview-card {
+  padding-inline: 28px !important;
+  overflow: hidden !important;
+}
+
+.printable-report {
+  width: min(620px, calc(100% - 24px)) !important;
+  padding: 36px !important;
+  overflow: hidden !important;
+}
+
+.report-medication-card dl {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.report-medication-wide {
+  grid-column: 1 / -1 !important;
+}
+
+.report-medication-card dd {
+  line-height: 1.45 !important;
+}
+
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] .app-shell,
+:root[data-theme="dark"] .content-shell {
+  background: var(--om-bg) !important;
+  color: var(--om-text) !important;
+}
+
+:root[data-theme="dark"] .sidebar,
+:root[data-theme="dark"] .mobile-tabbar,
+:root[data-theme="dark"] .mobile-app-header,
+:root[data-theme="dark"] .mobile-statusbar {
+  background: var(--om-sidebar) !important;
+  border-color: var(--om-border) !important;
+  color: var(--om-text) !important;
+}
+
+:root[data-theme="dark"] .mobile-app-header,
+:root[data-theme="dark"] .mobile-statusbar {
+  background: var(--om-bg) !important;
+}
+
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .summary-card,
+:root[data-theme="dark"] .schedule-panel,
+:root[data-theme="dark"] .interaction-card,
+:root[data-theme="dark"] .family-overview-card,
+:root[data-theme="dark"] .pet-overview-card,
+:root[data-theme="dark"] .compact-card,
+:root[data-theme="dark"] .report-type-panel,
+:root[data-theme="dark"] .report-preview-card,
+:root[data-theme="dark"] .report-setting-panel,
+:root[data-theme="dark"] .profile-switcher-menu,
+:root[data-theme="dark"] .sidebar-card,
+:root[data-theme="dark"] .workspace-context-banner,
+:root[data-theme="dark"] .mobile-report-card,
+:root[data-theme="dark"] .mobile-report-options,
+:root[data-theme="dark"] .mobile-report-paper {
+  background: var(--om-surface) !important;
+  border-color: var(--om-border) !important;
+  color: var(--om-text) !important;
+}
+
+:root[data-theme="dark"] .schedule-row,
+:root[data-theme="dark"] .history-table-row,
+:root[data-theme="dark"] .reminder-table-row,
+:root[data-theme="dark"] .medication-table-row,
+:root[data-theme="dark"] .report-type-button,
+:root[data-theme="dark"] .report-summary-list div,
+:root[data-theme="dark"] .report-medication-card,
+:root[data-theme="dark"] .chat-bubble.assistant,
+:root[data-theme="dark"] .question-item,
+:root[data-theme="dark"] .popular-question-list button,
+:root[data-theme="dark"] .guide-card,
+:root[data-theme="dark"] .empty-panel,
+:root[data-theme="dark"] .safe-box {
+  background: var(--om-soft) !important;
+  border-color: var(--om-border) !important;
+  color: var(--om-text) !important;
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea,
+:root[data-theme="dark"] .workspace-chip,
+:root[data-theme="dark"] .user-chip,
+:root[data-theme="dark"] .ghost-button,
+:root[data-theme="dark"] .topbar-icon-button,
+:root[data-theme="dark"] .theme-toggle,
+:root[data-theme="dark"] .avatar-add {
+  background: var(--om-surface) !important;
+  border-color: var(--om-border) !important;
+  color: var(--om-text) !important;
+}
+
+:root[data-theme="dark"] .nav-item,
+:root[data-theme="dark"] .mobile-tab,
+:root[data-theme="dark"] .brand-block span,
+:root[data-theme="dark"] .topbar-title p,
+:root[data-theme="dark"] .desktop-page-heading p,
+:root[data-theme="dark"] .summary-card span,
+:root[data-theme="dark"] .compact-card p,
+:root[data-theme="dark"] .mini-record-list,
+:root[data-theme="dark"] .report-summary-list dt,
+:root[data-theme="dark"] .report-medication-card dt,
+:root[data-theme="dark"] .report-type-button span,
+:root[data-theme="dark"] .printable-report p,
+:root[data-theme="dark"] .printable-report dd {
+  color: var(--om-secondary) !important;
+}
+
+:root[data-theme="dark"] .nav-item.active,
+:root[data-theme="dark"] .nav-item[aria-current="page"],
+:root[data-theme="dark"] .mobile-tab.active,
+:root[data-theme="dark"] .text-button,
+:root[data-theme="dark"] .theme-toggle {
+  color: #A5B4FC !important;
+}
+
+:root[data-theme="dark"] .brand-block strong,
+:root[data-theme="dark"] .topbar-title h1,
+:root[data-theme="dark"] .desktop-page-heading h2,
+:root[data-theme="dark"] .section-heading h2,
+:root[data-theme="dark"] .row-heading h2,
+:root[data-theme="dark"] .compact-card h2,
+:root[data-theme="dark"] .interaction-card h2,
+:root[data-theme="dark"] .summary-card strong,
+:root[data-theme="dark"] .report-type-button strong,
+:root[data-theme="dark"] .report-medication-title strong,
+:root[data-theme="dark"] .printable-report h3,
+:root[data-theme="dark"] .printable-report h4 {
+  color: var(--om-text) !important;
+}
+
+:root[data-theme="dark"] .interaction-alert {
+  background: rgba(245, 158, 11, 0.14) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+:root[data-theme="dark"] .safe-box,
+:root[data-theme="dark"] .chat-principle-card {
+  background: rgba(59, 130, 246, 0.12) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  color: var(--om-secondary) !important;
+}
+
+@media (max-width: 900px) {
+  html,
+  body,
+  #root,
+  .app-shell {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .content-shell {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    overflow-x: hidden !important;
+  }
+
+  .page-content,
+  .dashboard-home,
+  .scan-layout,
+  .history-page,
+  .reminder-page,
+  .safety-page,
+  .chat-page,
+  .reports-page,
+  .mobile-family-reference,
+  .mobile-pet-reference,
+  .settings-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .mobile-app-header {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .mobile-route-title {
+    min-width: 0 !important;
+  }
+
+  .mobile-header-actions {
+    flex: 0 0 auto !important;
+  }
+
+  .summary-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .summary-card {
+    min-width: 0 !important;
+  }
+
+  .mobile-header-actions .theme-toggle {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+  }
+
+  .mobile-route-title {
+    padding-left: 4px !important;
+  }
+
+  .printable-report,
+  .report-paper,
+  .mobile-report-paper {
+    width: 100% !important;
+    padding: 20px !important;
+  }
+
+  .mobile-report-paper {
+    overflow: hidden !important;
+  }
+
+  .mobile-report-med-list span,
+  .mobile-report-med-list b {
+    white-space: normal !important;
+  }
+}
+
+/* Mobile containment pass: the reference-like cards must never create horizontal scroll. */
+@media (max-width: 900px) {
+  *,
+  *::before,
+  *::after {
+    max-width: 100%;
+  }
+
+  .content-shell {
+    box-sizing: border-box !important;
+    inline-size: 100% !important;
+    max-inline-size: 100vw !important;
+    padding-inline: 16px !important;
+  }
+
+  .page-content,
+  .dashboard-home,
+  .scan-layout,
+  .history-page,
+  .reminder-page,
+  .safety-page,
+  .chat-page,
+  .reports-page,
+  .mobile-family-reference,
+  .mobile-pet-reference,
+  .settings-page {
+    inline-size: 100% !important;
+    max-inline-size: calc(100vw - 32px) !important;
+    min-inline-size: 0 !important;
+  }
+
+  .dashboard-main-grid,
+  .dashboard-lower-grid,
+  .scan-layout,
+  .history-page,
+  .reminder-page,
+  .safety-page,
+  .chat-page,
+  .reports-page {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .summary-grid {
+    inline-size: 100% !important;
+    max-inline-size: calc(100vw - 32px) !important;
+    grid-template-columns: repeat(2, minmax(0, calc((100vw - 40px) / 2))) !important;
+    gap: 8px !important;
+  }
+
+  .summary-card {
+    inline-size: calc((100vw - 40px) / 2) !important;
+    max-inline-size: calc((100vw - 40px) / 2) !important;
+    min-inline-size: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .summary-card span,
+  .summary-card strong,
+  .schedule-copy,
+  .schedule-copy strong,
+  .interaction-alert,
+  .interaction-alert *,
+  .compact-card,
+  .compact-card *,
+  .report-summary-list,
+  .report-summary-list *,
+  .chat-bubble,
+  .chat-bubble * {
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .schedule-card,
+  .interaction-card,
+  .family-overview-card,
+  .pet-overview-card,
+  .compact-card,
+  .assistant-preview,
+  .report-preview-card,
+  .report-settings-card,
+  .chat-room-panel,
+  .chat-context-panel,
+  .chat-history-panel,
+  .mobile-report-card,
+  .mobile-report-options,
+  .mobile-report-paper {
+    inline-size: 100% !important;
+    max-inline-size: 100% !important;
+    min-inline-size: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .interaction-alert {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .interaction-alert .ghost-button,
+  .interaction-alert .primary-button,
+  .interaction-alert .text-button {
+    justify-self: stretch !important;
+    inline-size: 100% !important;
+    min-inline-size: 0 !important;
+    white-space: normal !important;
+  }
+
+  .chat-input-row {
+    inline-size: 100% !important;
+    max-inline-size: 100% !important;
+    grid-template-columns: minmax(0, 1fr) 44px !important;
+  }
+
+  .chat-input-row input {
+    min-inline-size: 0 !important;
+  }
+
+  .mobile-app-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .mobile-route-title h1,
+  .mobile-route-title p {
+    max-inline-size: calc(100vw - 180px) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .summary-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .summary-card {
+    inline-size: 100% !important;
+    max-inline-size: 100% !important;
+  }
+}

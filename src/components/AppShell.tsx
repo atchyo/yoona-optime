@@ -104,13 +104,12 @@ export function AppShell({
           ))}
         </nav>
         <div className="sidebar-card">
-          <div className="sidebar-family-art" aria-hidden="true">
-            <span className="family-face face-one" />
-            <span className="family-face face-two" />
-            <span className="family-face face-three" />
-            <span className="family-face face-four" />
-            <span className="pet-face-mini" />
-          </div>
+          <img
+            alt=""
+            aria-hidden="true"
+            className="sidebar-care-image"
+            src={`${import.meta.env.BASE_URL}family-care-illustration.png`}
+          />
           <strong>우리 가족의 건강을 한눈에, 스마트하게</strong>
           <p>약과 영양제, 반려동물 기록까지 안전하고 체계적으로 관리하세요.</p>
         </div>
@@ -135,6 +134,7 @@ export function AppShell({
             </div>
           </div>
           <div className="mobile-header-actions">
+            <ThemeToggle onToggle={onThemeToggle} theme={theme} />
             <span className={avatarClassName("topbar-avatar", currentProfile)} aria-hidden="true">
               {profileAvatar(currentProfile)}
             </span>
@@ -147,6 +147,7 @@ export function AppShell({
             <p>{routeSubtitle("/")}</p>
           </div>
           <div className="topbar-actions">
+            <ThemeToggle onToggle={onThemeToggle} theme={theme} />
             <button className="topbar-icon-button" aria-label="알림" type="button">
               <Icon name="bell" />
               <span className="notification-dot" aria-hidden="true">3</span>
@@ -229,7 +230,6 @@ export function AppShell({
                     </button>
                   ))}
                   <div className="profile-menu-actions">
-                    <ThemeToggle onToggle={onThemeToggle} theme={theme} />
                     <button className="ghost-button" onClick={onLogout} type="button">
                       로그아웃
                     </button>
