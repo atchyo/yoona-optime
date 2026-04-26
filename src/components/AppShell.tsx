@@ -79,8 +79,6 @@ export function AppShell({
   const mobileItems = preferredMobilePaths
     .map((path) => visibleItems.find((item) => item.path === path))
     .filter(Boolean) as typeof visibleItems;
-  const currentRoute = navItems.find((item) => item.path === route) || navItems[0];
-
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -137,15 +135,16 @@ export function AppShell({
             </div>
           </div>
           <div className="mobile-header-actions">
-            <span className="topbar-avatar" aria-hidden="true">{profileAvatar(currentProfile)}</span>
+            <span className={avatarClassName("topbar-avatar", currentProfile)} aria-hidden="true">
+              {profileAvatar(currentProfile)}
+            </span>
             <button className="topbar-icon-button" aria-label="알림" type="button"><Icon name="bell" /></button>
           </div>
         </header>
         <header className="topbar">
           <div className="topbar-title">
-            <p className="eyebrow">{currentRoute.label}</p>
-            <h1>{routeTitle(route, user.name)}</h1>
-            <p>{routeSubtitle(route)}</p>
+            <h1>{greetingTitle(user.name)}</h1>
+            <p>{routeSubtitle("/")}</p>
           </div>
           <div className="topbar-actions">
             <button className="topbar-icon-button" aria-label="알림" type="button">
@@ -203,7 +202,9 @@ export function AppShell({
                 onClick={() => setIsProfileMenuOpen((current) => !current)}
                 type="button"
               >
-                <span className="topbar-avatar" aria-hidden="true">{profileAvatar(currentProfile)}</span>
+                <span className={avatarClassName("topbar-avatar", currentProfile)} aria-hidden="true">
+                  {profileAvatar(currentProfile)}
+                </span>
                 <div className="profile-switcher-copy">
                   <small>{profileRoleLabel(currentProfile, familyMembers, user)}</small>
                   <strong>{currentProfile.name}</strong>
@@ -238,6 +239,13 @@ export function AppShell({
             </div>
           </div>
         </header>
+
+        {route !== "/" && (
+          <section className="desktop-page-heading">
+            <h2>{routeTitle(route, user.name)}</h2>
+            <p>{routeSubtitle(route)}</p>
+          </section>
+        )}
 
         <WorkspaceContextBanner
           availableWorkspaces={availableWorkspaces}
@@ -305,7 +313,7 @@ function WorkspaceContextBanner({
 }
 
 function routeTitle(route: Route, userName: string): string {
-  if (route === "/") return `안녕하세요, ${userName}님! 👋`;
+  if (route === "/") return `안녕하세요, ${userName}님!`;
   if (route === "/scan") return "약 관리";
   if (route === "/profiles") return "가족약";
   if (route === "/history") return "복용 기록";
@@ -318,6 +326,10 @@ function routeTitle(route: Route, userName: string): string {
   if (route === "/settings") return "설정";
   if (route === "/service-admin") return "서비스 관리";
   return "Opti-Me";
+}
+
+function greetingTitle(userName: string): string {
+  return `안녕하세요, ${userName}님! 👋`;
 }
 
 function mobileTabLabel(path: Route, fallback: string): string {
@@ -376,6 +388,10 @@ function profileAvatar(profile: CareProfile): string {
   if (profile.type === "pet") return "🐶";
   const lastDigit = profile.id.charCodeAt(profile.id.length - 1) % 4;
   return ["👨", "👩", "👦", "👧"][lastDigit] || "🙂";
+}
+
+function avatarClassName(baseClassName: string, profile: CareProfile): string {
+  return profile.type === "pet" ? `${baseClassName} pet-avatar-ui` : baseClassName;
 }
 
 function workspaceKindLabel(

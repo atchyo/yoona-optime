@@ -71,9 +71,59 @@ export function ReportsPage({
     reportKinds.find((kind) => kind.id === reportKind)?.title || reportKinds[0].title;
 
   return (
-    <div className="reports-page">
+    <>
+      <div className="mobile-report-reference" aria-label="모바일 리포트 출력">
+        <section className="mobile-report-card card">
+          <header>
+            <div>
+              <h2>{reportTitle}</h2>
+              <span>생성일: {new Date().toLocaleDateString("ko-KR")}</span>
+            </div>
+          </header>
+          <article className="mobile-report-paper">
+            <h3>{selectedProfile?.name || "가족"}님 복약 지도 리포트</h3>
+            <section>
+              <h4>1. 복용 약물 요약</h4>
+              <div className="mobile-report-med-list">
+                {selectedMedications.slice(0, 4).map((medication) => (
+                  <p key={medication.id}>
+                    <span>{medication.productName}</span>
+                    <b>{medicationScheduleText(medication, schedules)}</b>
+                  </p>
+                ))}
+                {!selectedMedications.length && <p>등록된 복용약이 없습니다.</p>}
+              </div>
+            </section>
+            <section>
+              <h4>2. 주의 사항</h4>
+              <p>
+                {findings.length
+                  ? findings[0].message
+                  : "현재 등록 약 기준으로 표시할 중대한 충돌은 없습니다."}
+              </p>
+            </section>
+            <section>
+              <h4>3. 가족 관리 메모</h4>
+              <p>{selectedProfile?.notes || "응급실 방문 시 평소 복용 중인 약을 빠르게 전달할 수 있습니다."}</p>
+            </section>
+          </article>
+        </section>
+
+        <section className="mobile-report-options">
+          <h2>생성 옵션</h2>
+          <label><input defaultChecked type="checkbox" /> 복용 기록 포함</label>
+          <label><input defaultChecked type="checkbox" /> 상호작용 결과 포함</label>
+          <label><input defaultChecked type="checkbox" /> 반려동물 기록 포함</label>
+        </section>
+
+        <div className="mobile-report-actions">
+          <button className="primary-button" onClick={() => window.print()} type="button">PDF 다운로드</button>
+          <button className="ghost-button" onClick={() => window.print()} type="button">공유하기</button>
+        </div>
+      </div>
+
+      <div className="reports-page">
       <aside className="card report-type-panel">
-        <p className="eyebrow">Report Output</p>
         <h2>리포트 종류</h2>
         <div className="report-type-list">
           {reportKinds.map((kind) => (
@@ -93,24 +143,7 @@ export function ReportsPage({
       <section className="card report-preview-card">
         <div className="report-page-toolbar">
           <div>
-            <p className="eyebrow">Preview</p>
-            <h2>{reportTitle}</h2>
-          </div>
-          <div className="report-control-row">
-            <select
-              aria-label="리포트 대상"
-              onChange={(event) => setSelectedProfileId(event.target.value)}
-              value={selectedProfile?.id || ""}
-            >
-              {careProfiles.map((profile) => (
-                <option key={profile.id} value={profile.id}>
-                  {profile.name}
-                </option>
-              ))}
-            </select>
-            <button className="ghost-button" onClick={() => window.print()} type="button">
-              인쇄
-            </button>
+            <h2>복약 지도 리포트 미리보기</h2>
           </div>
         </div>
 
@@ -197,7 +230,6 @@ export function ReportsPage({
       </section>
 
       <aside className="card report-setting-panel">
-        <p className="eyebrow">Report Settings</p>
         <h2>리포트 설정</h2>
         <label>
           대상 선택
@@ -213,17 +245,36 @@ export function ReportsPage({
             ))}
           </select>
         </label>
+        <label>
+          기간 선택
+          <select defaultValue="최근 1개월">
+            <option>현재</option>
+            <option>최근 1개월</option>
+            <option>최근 3개월</option>
+            <option>직접 선택</option>
+          </select>
+        </label>
+        <label>
+          출력 형식
+          <select defaultValue="PDF">
+            <option>PDF</option>
+            <option>인쇄</option>
+          </select>
+        </label>
+        <label>
+          포함 항목
+          <select defaultValue="복용약 · 주의사항 · 기록">
+            <option>복용약 · 주의사항 · 기록</option>
+            <option>복용약만</option>
+            <option>상호작용 중심</option>
+          </select>
+        </label>
         <fieldset className="report-option-group">
-          <legend>기간 선택</legend>
-          <label><input defaultChecked name="period" type="radio" /> 현재</label>
-          <label><input name="period" type="radio" /> 최근 1개월</label>
-          <label><input name="period" type="radio" /> 최근 3개월</label>
-          <label><input name="period" type="radio" /> 직접 선택</label>
+          <legend>생성 옵션</legend>
+          <label><input defaultChecked type="checkbox" /> 상호작용 결과 포함</label>
+          <label><input defaultChecked type="checkbox" /> 복용 누락 기록 포함</label>
+          <label><input defaultChecked type="checkbox" /> 반려동물 기록 포함</label>
         </fieldset>
-        <div className="report-date-range">
-          <input aria-label="시작일" type="date" />
-          <input aria-label="종료일" type="date" />
-        </div>
         <button className="primary-button wide" onClick={() => window.print()} type="button">
           PDF 다운로드
         </button>
@@ -231,7 +282,8 @@ export function ReportsPage({
           인쇄하기
         </button>
       </aside>
-    </div>
+      </div>
+    </>
   );
 }
 

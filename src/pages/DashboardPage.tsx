@@ -50,10 +50,11 @@ export function DashboardPage({
     .map((schedule) => {
       const medication = medications.find((item) => item.id === schedule.medicationId);
       const profile = careProfiles.find((item) => item.id === medication?.careProfileId);
-      return medication && profile ? { schedule, medication, profile } : undefined;
+      const completedLog = logs.find((log) => log.scheduleId === schedule.id);
+      return medication && profile ? { schedule, medication, profile, completedLog } : undefined;
     })
     .filter(Boolean)
-    .slice(0, 4) as Array<{ schedule: MedicationSchedule; medication: Medication; profile: CareProfile }>;
+    .slice(0, 4) as Array<{ schedule: MedicationSchedule; medication: Medication; profile: CareProfile; completedLog?: MedicationLog }>;
   const familyProfiles = careProfiles.filter((profile) => profile.type !== "pet");
   const petProfiles = careProfiles.filter((profile) => profile.type === "pet");
   const recentLogs = logs
@@ -96,7 +97,7 @@ export function DashboardPage({
           </div>
           <div className="schedule-list">
             {todaySchedules.length ? (
-              todaySchedules.map(({ schedule, medication, profile }) => (
+              todaySchedules.map(({ schedule, medication, profile, completedLog }) => (
                 <div className="schedule-row" key={schedule.id}>
                   <time>
                     <strong>{schedule.timeOfDay}</strong>
@@ -108,7 +109,7 @@ export function DashboardPage({
                     <span>{medication.dosage || schedule.label || "등록 용량 확인"}</span>
                   </div>
                   <button className="owner-badge schedule-done-button" onClick={() => void onMarkTaken(schedule)} type="button">
-                    {profile.name}
+                    {completedLog ? "복용 완료" : "복용 예정"}
                   </button>
                   <span className="owner-badge schedule-owner-badge">{profile.name}</span>
                 </div>
@@ -152,7 +153,7 @@ export function DashboardPage({
           <div className="avatar-row">
             {familyProfiles.slice(0, 5).map((profile) => (
               <div className="avatar-person" key={profile.id}>
-                <span>{profileAvatar(profile)}</span>
+                <span className={profile.type === "pet" ? "pet-avatar-ui" : undefined}>{profileAvatar(profile)}</span>
                 <strong>{profile.name}</strong>
               </div>
             ))}

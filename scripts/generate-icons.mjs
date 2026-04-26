@@ -19,7 +19,7 @@ const CRC_TABLE = Array.from({ length: 256 }, (_, index) => {
 
 const iconSvg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#4F46E5"/>
+  <rect width="512" height="512" fill="#4F46E5"/>
   <circle cx="204" cy="164" r="101" fill="#FFE8A3"/>
   <circle cx="308" cy="164" r="101" fill="#FFFFFF" opacity="0.96"/>
   <circle cx="204" cy="348" r="101" fill="#FFFFFF" opacity="0.96"/>
@@ -30,8 +30,6 @@ const iconSvg = `<?xml version="1.0" encoding="UTF-8"?>
 
 writeFileSync(sourceSvgPath, iconSvg);
 execFileSync("sips", ["-s", "format", "png", sourceSvgPath, "--out", sourcePngPath], { stdio: "ignore" });
-execFileSync("sips", ["-s", "format", "jpeg", sourcePngPath, "--out", flattenedJpegPath], { stdio: "ignore" });
-execFileSync("sips", ["-s", "format", "png", flattenedJpegPath, "--out", sourcePngPath], { stdio: "ignore" });
 
 for (const [fileName, size] of [
   ["apple-touch-icon.png", 180],

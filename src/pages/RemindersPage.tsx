@@ -45,6 +45,13 @@ export function RemindersPage({
   const profileLogs = logs
     .filter((log) => profileMeds.some((medication) => medication.id === log.medicationId))
     .slice(0, 6);
+  const mobileReminderItems = profileMeds.slice(0, 4);
+  const nextReminderMedication = mobileReminderItems[2] || mobileReminderItems[0];
+  const nextReminderSchedule = nextReminderMedication
+    ? scheduleByMedicationId.get(nextReminderMedication.id)
+    : undefined;
+  const nextReminderTime = nextReminderSchedule?.timeOfDay || "12:00";
+  const nextReminderName = nextReminderMedication ? compactMedicationName(nextReminderMedication.productName) : "등록된 약 없음";
 
   useEffect(() => {
     setDrafts((current) => {
@@ -141,15 +148,76 @@ export function RemindersPage({
   }
 
   return (
-    <div className="reminder-page">
+    <>
+      <div className="mobile-reminder-reference" aria-label="모바일 복약 알림">
+        <section className="mobile-reminder-today card">
+          <div>
+            <h2>오늘 알림</h2>
+            <strong>
+              다음 알림: {nextReminderTime} {nextReminderName}
+            </strong>
+          </div>
+          <label className="toggle-switch mobile-reminder-master">
+            <input defaultChecked type="checkbox" />
+            <span />
+          </label>
+          <p>전체 알림 사용</p>
+        </section>
+
+        <section className="mobile-reminder-preview">
+          <div className="mobile-reminder-clock">
+            <strong>{nextReminderTime}</strong>
+            <span>오늘</span>
+          </div>
+          <div className="mobile-reminder-toast">
+            <div>
+              <span>Opti-Me</span>
+              <strong>복약 시간이에요!</strong>
+              <p>
+                {nextReminderMedication
+                  ? `${nextReminderName} ${nextReminderMedication.dosage || "1회분"}을 복용하세요.`
+                  : "약 관리에서 알림을 설정해 주세요."}
+              </p>
+            </div>
+            <button type="button">확인</button>
+          </div>
+        </section>
+
+        <section className="mobile-reminder-list card">
+          <h2>알림 목록</h2>
+          <div className="mobile-reminder-items">
+            {mobileReminderItems.map((medication, index) => {
+              const schedule = scheduleByMedicationId.get(medication.id);
+              return (
+                <article className="mobile-reminder-item" key={medication.id}>
+                  <strong>{schedule?.timeOfDay || fallbackTime(index)}</strong>
+                  <div>
+                    <b>{compactMedicationName(medication.productName)}</b>
+                    <span>{currentProfile.name} · 푸시 알림</span>
+                  </div>
+                  <label className="toggle-switch">
+                    <input defaultChecked={Boolean(schedule)} type="checkbox" />
+                    <span />
+                  </label>
+                </article>
+              );
+            })}
+            {!mobileReminderItems.length && <p className="empty-panel">알림을 만들 약이 없습니다.</p>}
+          </div>
+        </section>
+      </div>
+
+      <div className="reminder-page">
       <section className="card reminder-main-card">
         <div className="row-heading">
           <div>
-            <p className="eyebrow">Medication Alerts</p>
-            <h2>{currentProfile.name}님 복약 알림</h2>
-            <p className="muted">복용 시간을 저장하고 완료 기록을 남길 수 있습니다.</p>
+            <h2>복약 알림</h2>
+            <p className="muted">약 복용 시간을 설정하고 알림을 관리할 수 있습니다.</p>
           </div>
-          <span className="owner-badge">등록 약 {profileMeds.length}건</span>
+          <label className="toggle-switch desktop-reminder-master">
+            <input defaultChecked type="checkbox" />
+            <span />
+          </label>
         </div>
         {statusMessage && <p className="form-note">{statusMessage}</p>}
 
@@ -274,7 +342,8 @@ export function RemindersPage({
           {!profileLogs.length && <p className="muted">아직 복용 완료 기록이 없습니다.</p>}
         </section>
       </aside>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -318,4 +387,19 @@ function formatTakenAt(value: string): string {
     dateStyle: "short",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function fallbackTime(index: number): string {
+  return ["08:00", "09:00", "12:00", "18:00", "21:00"][index] || "08:00";
+}
+
+function compactMedicationName(productName: string): string {
+  const normalized = productName.trim();
+  if (normalized.includes("타이레놀")) return "타이레놀";
+  if (normalized.includes("오메가3") || normalized.toLocaleLowerCase("ko-KR").includes("omega-3")) return "오메가3";
+  if (normalized.includes("비타민D")) return "비타민D";
+  if (normalized.includes("종합비타민")) return "종합비타민";
+  if (normalized.includes("마그네슘")) return "마그네슘";
+  const withoutParentheses = normalized.replace(/\([^)]*\)/g, "").trim();
+  return withoutParentheses.length > 12 ? `${withoutParentheses.slice(0, 12)}...` : withoutParentheses;
 }

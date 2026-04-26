@@ -361,9 +361,115 @@ export function FamilyAdminPage({
     : undefined;
   const familyCareProfiles = careProfiles.filter((profile) => profile.type !== "pet");
   const pendingInvitations = familyInvitations.filter((invitation) => invitation.status === "pending");
+  const mobilePermissionMembers = draftMembers.filter((member) => member.role !== "owner");
 
   return (
-    <div className="family-admin-reference-page">
+    <>
+      <div className="mobile-family-reference">
+        <section className="mobile-family-card card">
+          <h2>가족 구성원</h2>
+          <div className="mobile-family-list" role="listbox" aria-label="가족 구성원 선택">
+            {draftMembers.map((member) => {
+              const profile = careProfiles.find((item) => item.id === member.careProfileId);
+              return (
+                <button
+                  aria-selected={member.id === selectedMember?.id}
+                  className={member.id === selectedMember?.id ? "active" : ""}
+                  key={member.id}
+                  onClick={() => setSelectedMemberId(member.id)}
+                  role="option"
+                  type="button"
+                >
+                  <span className="reference-avatar" aria-hidden="true">{memberAvatar(member)}</span>
+                  <span>
+                    <strong>{memberDisplayName(member)}</strong>
+                    <small>{memberSubtitle(member, profile)}</small>
+                  </span>
+                  <b aria-hidden="true">&gt;</b>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="mobile-family-card card">
+          <h2>대표 권한 설정</h2>
+          <div className="mobile-permission-grid" aria-label="대표 권한 설정">
+            <div className="mobile-permission-head">
+              <span />
+              <span>약관리</span>
+              <span>기록</span>
+              <span>알림</span>
+              <span>리포트</span>
+            </div>
+            {mobilePermissionMembers.map((member) => (
+              <div className="mobile-permission-row" key={member.id}>
+                <strong>{member.displayName}</strong>
+                {["약관리", "기록", "알림", "리포트"].map((label) => (
+                  <label className="mobile-permission-check" key={`${member.id}-${label}`}>
+                    <input
+                      checked={normalizedAccessibleProfileIds(member, careProfiles).length > 0}
+                      onChange={() =>
+                        updateDraftMember(member.id, {
+                          accessibleProfileIds: normalizedAccessibleProfileIds(member, careProfiles).length
+                            ? ownProfileIdsForMember(member, careProfiles)
+                            : careProfiles.map((profile) => profile.id),
+                        })
+                      }
+                      type="checkbox"
+                    />
+                    <span aria-hidden="true">v</span>
+                  </label>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mobile-family-invite-card card">
+          <h2>초대 링크 발송</h2>
+          <p>이메일을 등록해 두면 가족이 로그인할 때 같은 가족공간에 연결됩니다.</p>
+          <input
+            aria-label="가족 초대 이메일"
+            onChange={(event) => updateMemberForm("email", event.target.value)}
+            placeholder="가족 이메일 입력"
+            type="email"
+            value={memberForm.email}
+          />
+          {isMemberFormOpen && (
+            <div className="mobile-family-extra-fields">
+              <input
+                aria-label="가족 이름"
+                onChange={(event) => updateMemberForm("displayName", event.target.value)}
+                placeholder="가족 이름 입력"
+                value={memberForm.displayName}
+              />
+              <select
+                aria-label="가족 권한"
+                onChange={(event) => updateMemberForm("role", event.target.value)}
+                value={memberForm.role}
+              >
+                <option value="member">가족구성원</option>
+                <option value="manager">가족관리자</option>
+              </select>
+              <button className="primary-button" onClick={addFamilyMember} type="button">
+                초대 보내기
+              </button>
+            </div>
+          )}
+          {memberSaveNote && <span className="save-note">{memberSaveNote}</span>}
+        </section>
+
+        <button
+          className="primary-button mobile-family-bottom-action"
+          onClick={() => setIsMemberFormOpen((current) => !current)}
+          type="button"
+        >
+          {isMemberFormOpen ? "가족 추가 접기" : "+ 가족 추가"}
+        </button>
+      </div>
+
+      <div className="family-admin-reference-page">
       <section className="family-member-list-panel">
         <div className="section-heading">
           <p className="eyebrow">Family</p>
@@ -384,8 +490,8 @@ export function FamilyAdminPage({
               >
                 <span className="reference-avatar" aria-hidden="true">{memberAvatar(member)}</span>
                 <span>
-                  <strong>{member.displayName}</strong>
-                  <small>{roleLabel(member.role)} · {profileRelationshipLabel(profile)}</small>
+                  <strong>{memberDisplayName(member)}</strong>
+                  <small>{memberSubtitle(member, profile)}</small>
                 </span>
                 <em>{member.userId ? "연결" : "대기"}</em>
               </button>
@@ -498,8 +604,8 @@ export function FamilyAdminPage({
           <div className="reference-family-editor">
             <aside className="selected-family-profile">
               <span className="reference-avatar large" aria-hidden="true">{memberAvatar(selectedMember)}</span>
-              <strong>{selectedMember.displayName}</strong>
-              <small>{profileRelationshipLabel(selectedMemberProfile)}</small>
+              <strong>{memberDisplayName(selectedMember)}</strong>
+              <small>{memberSubtitle(selectedMember, selectedMemberProfile)}</small>
               <dl>
                 <div>
                   <dt>권한</dt>
@@ -649,6 +755,53 @@ export function FamilyAdminPage({
           </div>
         )}
       </section>
+
+      <div className="mobile-family-add-block">
+        <button
+          className={isMemberFormOpen ? "primary-button mobile-family-add-button is-open" : "primary-button mobile-family-add-button"}
+          onClick={() => setIsMemberFormOpen((current) => !current)}
+          type="button"
+        >
+          {isMemberFormOpen ? "가족 추가 접기" : "+ 가족 추가"}
+        </button>
+
+        {isMemberFormOpen && (
+          <div className="collapsible-panel reference-invite-panel mobile-family-invite-panel">
+            <div className="member-edit-fields">
+              <label>
+                이름
+                <input
+                  onChange={(event) => updateMemberForm("displayName", event.target.value)}
+                  placeholder="예) 공윤아"
+                  value={memberForm.displayName}
+                />
+              </label>
+              <label>
+                로그인 이메일
+                <input
+                  onChange={(event) => updateMemberForm("email", event.target.value)}
+                  placeholder="가족이 로그인할 이메일"
+                  type="email"
+                  value={memberForm.email}
+                />
+              </label>
+              <label>
+                권한
+                <select
+                  onChange={(event) => updateMemberForm("role", event.target.value)}
+                  value={memberForm.role}
+                >
+                  <option value="member">가족구성원</option>
+                  <option value="manager">가족관리자</option>
+                </select>
+              </label>
+            </div>
+            <button className="primary-button" onClick={addFamilyMember} type="button">
+              초대 만들기
+            </button>
+          </div>
+        )}
+      </div>
 
       <section className="card">
         <div className="section-heading split-heading">
@@ -830,7 +983,8 @@ export function FamilyAdminPage({
             ))}
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -838,6 +992,17 @@ function roleLabel(role: FamilyRole): string {
   if (role === "owner") return "가족대표";
   if (role === "manager") return "가족관리자";
   return "가족구성원";
+}
+
+function memberDisplayName(member: FamilyMember): string {
+  return member.role === "owner" ? `${member.displayName} (대표)` : member.displayName;
+}
+
+function memberSubtitle(member: FamilyMember, profile?: CareProfile): string {
+  if (member.role === "owner") return "대표";
+  if (member.role === "manager") return "보호자";
+  if (profile?.type === "pet") return "반려동물";
+  return "가족 구성원";
 }
 
 function memberConnectionLabel(member: FamilyMember): string {
@@ -867,7 +1032,7 @@ function petSummaryLine(profile: CareProfile): string {
 
 function profileRelationshipLabel(profile?: CareProfile): string {
   if (!profile) return "가족";
-  if (profile.type === "self") return "본인";
+  if (profile.type === "self") return profile.name;
   if (profile.type === "parent") return profile.ageGroup === "60" ? "부모님" : "가족";
   if (profile.type === "child") return "자녀";
   return "반려동물";

@@ -43,6 +43,7 @@ export function MedicationHistoryPage({
   const visibleRows = rows
     .filter((row) => row.profile.id === selectedProfile.id)
     .filter((row) => filter === "all" || row.kind === filter);
+  const mobileRows = visibleRows.slice(0, 5);
   const takenCount = rows.filter((row) => row.profile.id === selectedProfile.id && row.kind === "taken").length;
   const plannedCount = rows.filter((row) => row.profile.id === selectedProfile.id && row.kind === "planned").length;
 
@@ -77,13 +78,87 @@ export function MedicationHistoryPage({
   }
 
   return (
-    <div className="history-page">
+    <>
+      <div className="mobile-history-reference" aria-label="모바일 복용 기록">
+        <section className="mobile-history-calendar card">
+          <header>
+            <h2>2026년 4월</h2>
+            <span>&lt; &gt;</span>
+          </header>
+          <div className="mobile-history-week">
+            {["월", "화", "수", "목", "금", "토", "일"].map((day) => (
+              <strong key={day}>{day}</strong>
+            ))}
+          </div>
+          <div className="mobile-history-days" aria-hidden="true">
+            {[20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 1, 2, 3].map((day) => (
+              <span className={day === 24 ? "active" : ""} key={`${day}`}>
+                {day}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <section className="mobile-history-list">
+          <h2>4월 24일 (금요일)</h2>
+          <div className="mobile-history-items">
+            {mobileRows.map((row, index) => (
+              <article className="mobile-history-item card" key={row.id}>
+                <time>{row.schedule?.timeOfDay || fallbackMobileTime(index)}</time>
+                <span className="medicine-icon" aria-hidden="true" />
+                <div>
+                  <strong>{compactMedicationName(row.medication.productName)}</strong>
+                  <small>{row.profile.name}</small>
+                </div>
+                <b className={row.kind === "taken" ? "done" : ""}>
+                  {row.kind === "taken" ? "복용 완료" : "복용 예정"}
+                </b>
+              </article>
+            ))}
+            {!mobileRows.length && (
+              <article className="mobile-history-item card">
+                <time>08:00</time>
+                <span className="medicine-icon" aria-hidden="true" />
+                <div>
+                  <strong>기록 없음</strong>
+                  <small>{selectedProfile.name}</small>
+                </div>
+                <b>대기</b>
+              </article>
+            )}
+          </div>
+        </section>
+
+        <button className="ghost-button wide mobile-history-export" onClick={exportCsv} type="button">
+          기록 내보내기
+        </button>
+      </div>
+
+      <div className="history-page">
       <aside className="card history-filter-panel">
         <div className="section-heading">
           <p className="eyebrow">Medication Log</p>
           <h2>복용 기록</h2>
           <p className="muted">가족별 복용 완료와 예정 기록을 날짜순으로 확인합니다.</p>
         </div>
+        <section className="desktop-history-calendar" aria-label="복용 기록 달력">
+          <header>
+            <h3>2026년 4월</h3>
+            <span>&lt; &gt;</span>
+          </header>
+          <div className="desktop-history-week">
+            {["월", "화", "수", "목", "금", "토", "일"].map((day) => (
+              <strong key={day}>{day}</strong>
+            ))}
+          </div>
+          <div className="desktop-history-days" aria-hidden="true">
+            {[20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 1, 2, 3].map((day) => (
+              <span className={day === 24 ? "active" : ""} key={`${day}`}>
+                {day}
+              </span>
+            ))}
+          </div>
+        </section>
         <label className="field-label" htmlFor="history-profile">관리대상</label>
         <select id="history-profile" value={selectedProfile.id} onChange={(event) => setProfileId(event.target.value)}>
           {careProfiles.map((profile) => (
@@ -152,8 +227,17 @@ export function MedicationHistoryPage({
           {!visibleRows.length && <p className="empty-panel">표시할 복용 기록이 없습니다.</p>}
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
+}
+
+function fallbackMobileTime(index: number): string {
+  return ["08:00", "09:00", "12:00", "18:00", "21:00"][index] || "08:00";
+}
+
+function compactMedicationName(name: string): string {
+  return name.replace(/\s*\(.+?\)\s*/g, "").trim();
 }
 
 function buildHistoryRows(

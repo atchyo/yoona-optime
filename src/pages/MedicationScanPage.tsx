@@ -505,17 +505,7 @@ export function MedicationScanPage({
             }}
             type="button"
           >
-            약 DB 검색으로 등록
-          </button>
-          <button
-            className="ghost-button"
-            onClick={() => {
-              setActiveRegistrationMode("photo");
-              setIsRegistrationOpen(true);
-            }}
-            type="button"
-          >
-            사진으로 OCR 등록
+            + 약 등록하기
           </button>
         </div>
       </section>

@@ -57,6 +57,29 @@ export function PetAdminPage({
   const selectedPetMedications = selectedPet
     ? medications.filter((medication) => medication.careProfileId === selectedPet.id)
     : [];
+  const mobilePetRecords = selectedPetMedications.length
+    ? selectedPetMedications.slice(0, 3).map((medication, index) => ({
+        category: index === 0 ? "사료" : index === 1 ? "관절 영양제" : "유산균",
+        name: medication.productName,
+        cadence: medication.instructions || medication.dosage || "1일 1회",
+      }))
+    : [
+        {
+          category: "사료",
+          name: selectedPet?.petDetails?.mainFood || "로얄 캐닌 말티즈 어덜트",
+          cadence: "1일 1회",
+        },
+        {
+          category: "관절 영양제",
+          name: "글루코사민",
+          cadence: "1일 1회",
+        },
+        {
+          category: "유산균",
+          name: "반려동물 유산균",
+          cadence: "1일 1회",
+        },
+      ];
 
   function updateForm(field: keyof PetFormState, value: string): void {
     setStatusMessage("");
@@ -143,7 +166,166 @@ export function PetAdminPage({
   }
 
   return (
-    <div className="pet-admin-page">
+    <>
+      <div className="desktop-pet-reference">
+        <aside className="card desktop-pet-list">
+          <h2>반려동물 목록</h2>
+          <div className="desktop-pet-list-items">
+            {pets.map((pet) => (
+              <button
+                className={pet.id === selectedPet?.id ? "active" : ""}
+                key={pet.id}
+                onClick={() => setSelectedPetId(pet.id)}
+                type="button"
+              >
+                <span className="pet-avatar" aria-hidden="true">
+                  🐶
+                </span>
+                <span>
+                  <strong>{pet.name}</strong>
+                  <small>{petSummaryLine(pet)}</small>
+                </span>
+              </button>
+            ))}
+            {!pets.length && <p className="empty-panel">등록된 반려동물이 없습니다.</p>}
+          </div>
+          <button className="ghost-button" type="button">
+            + 반려동물 추가
+          </button>
+        </aside>
+
+        <section className="card desktop-pet-info">
+          <div className="desktop-pet-profile">
+            <span className="pet-avatar large" aria-hidden="true">
+              🐶
+            </span>
+            <div>
+              <h2>{selectedPet?.name || "강아지"}</h2>
+              <p>{selectedPet?.petDetails?.age || "말티즈"}</p>
+            </div>
+          </div>
+          <dl>
+            <div>
+              <dt>이름</dt>
+              <dd>{selectedPet?.name || "강아지"}</dd>
+            </div>
+            <div>
+              <dt>품종</dt>
+              <dd>{selectedPet?.petDetails?.mainFood ? "말티즈" : "말티즈"}</dd>
+            </div>
+            <div>
+              <dt>생년월일</dt>
+              <dd>{selectedPet?.petDetails?.birthDate || selectedPet?.petDetails?.age || "2021.03.10 (3살)"}</dd>
+            </div>
+            <div>
+              <dt>성별</dt>
+              <dd>수컷</dd>
+            </div>
+            <div>
+              <dt>몸무게</dt>
+              <dd>{selectedPet?.petDetails?.weightKg ? `${selectedPet.petDetails.weightKg}kg` : "3.2kg"}</dd>
+            </div>
+            <div>
+              <dt>알레르기</dt>
+              <dd>{selectedPet?.petDetails?.allergies || "닭고기 의심"}</dd>
+            </div>
+          </dl>
+          <div className="desktop-pet-memo">
+            <h3>건강 메모</h3>
+            <p>
+              {selectedPet?.notes ||
+                "최근 피부 가려움이 있어 간식 성분을 확인 중입니다. 영양제 복용 후 변 상태를 함께 기록하세요."}
+            </p>
+          </div>
+          <button className="ghost-button" type="button">
+            수정
+          </button>
+        </section>
+
+        <section className="card desktop-pet-records">
+          <h2>사료·영양제 기록</h2>
+          <div className="desktop-pet-record-list">
+            {mobilePetRecords.map((record, index) => (
+              <article className="desktop-pet-record" key={`${record.name}-${index}`}>
+                <span className={`mobile-pet-record-icon tone-${index % 3}`} aria-hidden="true">
+                  {index === 0 ? "▤" : "●"}
+                </span>
+                <span>
+                  <small>{record.category}</small>
+                  <strong>{record.name}</strong>
+                </span>
+                <b>{record.cadence}</b>
+              </article>
+            ))}
+          </div>
+          <div className="desktop-pet-next">
+            <h3>다음 관리 일정</h3>
+            <p>- 예방접종: 2024.06.12</p>
+            <p>- 심장사상충: 매월 1일</p>
+            <p>- 체중 체크: 매주 일요일</p>
+          </div>
+          <button className="primary-button wide" type="button">
+            + 기록 등록
+          </button>
+        </section>
+      </div>
+
+      <div className="mobile-pet-reference">
+        <section className="mobile-pet-hero card">
+          <span className="pet-avatar large" aria-hidden="true">
+            🐶
+          </span>
+          <div>
+            <h2>{selectedPet ? `우리 ${selectedPet.name}` : "우리 강아지"}</h2>
+            <p>
+              {selectedPet
+                ? [selectedPet.petDetails?.age, selectedPet.petDetails?.weightKg && `${selectedPet.petDetails.weightKg}kg`]
+                    .filter(Boolean)
+                    .join(" · ") || petSummaryLine(selectedPet)
+                : "말티즈 · 3살 · 3.2kg"}
+            </p>
+          </div>
+          <button className="ghost-button" type="button">
+            수정
+          </button>
+        </section>
+
+        <div className="mobile-pet-tabs" role="tablist" aria-label="반려동물 관리 탭">
+          <button className="active" type="button">기록</button>
+          <button type="button">사료·영양제</button>
+          <button type="button">건강 기록</button>
+        </div>
+
+        <section className="mobile-pet-record-list" aria-label="사료와 영양제 기록">
+          {mobilePetRecords.map((record, index) => (
+            <article className="mobile-pet-record card" key={`${record.name}-${index}`}>
+              <span className={`mobile-pet-record-icon tone-${index % 3}`} aria-hidden="true">
+                {index === 0 ? "▤" : "●"}
+              </span>
+              <div>
+                <small>{record.category}</small>
+                <strong>{record.name}</strong>
+              </div>
+              <span>{record.cadence}</span>
+              <b aria-hidden="true">&gt;</b>
+            </article>
+          ))}
+        </section>
+
+        <section className="mobile-pet-memo card">
+          <h3>건강 메모</h3>
+          <p>
+            {selectedPet?.notes ||
+              "최근 피부 가려움이 있어 간식 성분을 확인 중입니다. 영양제 복용 후 변 상태를 같이 기록하세요."}
+          </p>
+        </section>
+
+        <button className="primary-button mobile-pet-primary" type="button">
+          + 기록 등록
+        </button>
+      </div>
+
+      <div className="pet-admin-page">
       <aside className="card pet-list-panel">
         <div className="section-heading">
           <p className="eyebrow">Pet Profiles</p>
@@ -294,7 +476,8 @@ export function PetAdminPage({
           반려동물 등록
         </button>
       </section>
-    </div>
+      </div>
+    </>
   );
 }
 
