@@ -74,7 +74,7 @@ export function DashboardPage({
   return (
     <div className="dashboard-home">
       <section className="mobile-dashboard-greeting">
-        <h1>안녕하세요, {currentProfile.name}님! 👋</h1>
+        <h1>안녕하세요, {currentProfile.name}님!</h1>
         <p>오늘도 우리 가족의 건강한 하루를 응원합니다.</p>
       </section>
 

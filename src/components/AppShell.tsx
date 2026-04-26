@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { Icon } from "./Icon";
@@ -70,6 +70,27 @@ export function AppShell({
 }: AppShellProps): ReactElement {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const spaceMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isProfileMenuOpen && !isSpaceMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent): void => {
+      const target = event.target as Node;
+
+      if (profileMenuRef.current?.contains(target) || spaceMenuRef.current?.contains(target)) {
+        return;
+      }
+
+      setIsProfileMenuOpen(false);
+      setIsSpaceMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isProfileMenuOpen, isSpaceMenuOpen]);
   const visibleItems = navItems.filter((item) => {
     if (item.adminOnly) return user.role === "admin";
     if (item.ownerOnly) return user.familyRole === "owner" || user.familyRole === "manager";
@@ -129,7 +150,7 @@ export function AppShell({
             )}
             {route === "/" && <BrandMark className="mobile-brand-icon" />}
             <div>
-              <h1>{routeTitle(route, user.name)}</h1>
+              <h1>{routeTitle(route, currentProfile.name)}</h1>
               <p>{mobileRouteSubtitle(route)}</p>
             </div>
           </div>
@@ -143,7 +164,7 @@ export function AppShell({
         </header>
         <header className="topbar">
           <div className="topbar-title">
-            <h1>{greetingTitle(user.name)}</h1>
+            <h1>{greetingTitle(currentProfile.name)}</h1>
             <p>{routeSubtitle("/")}</p>
           </div>
           <div className="topbar-actions">
@@ -156,12 +177,15 @@ export function AppShell({
               <span aria-hidden="true">ⓘ</span>
               도움말
             </button>
-            <div className="space-switcher">
+            <div className="space-switcher" ref={spaceMenuRef}>
               <button
                 aria-expanded={isSpaceMenuOpen}
                 aria-haspopup="listbox"
                 className="workspace-chip"
-                onClick={() => setIsSpaceMenuOpen((current) => !current)}
+                onClick={() => {
+                  setIsProfileMenuOpen(false);
+                  setIsSpaceMenuOpen((current) => !current);
+                }}
                 type="button"
               >
                 <span className="chip-label">{workspaceKindLabel(workspace, familyMembers, user)}</span>
@@ -195,12 +219,15 @@ export function AppShell({
                 </div>
               )}
             </div>
-            <div className="profile-switcher">
+            <div className="profile-switcher" ref={profileMenuRef}>
               <button
                 aria-expanded={isProfileMenuOpen}
                 aria-haspopup="listbox"
                 className="user-chip profile-switcher-button"
-                onClick={() => setIsProfileMenuOpen((current) => !current)}
+                onClick={() => {
+                  setIsSpaceMenuOpen(false);
+                  setIsProfileMenuOpen((current) => !current);
+                }}
                 type="button"
               >
                 <span className={avatarClassName("topbar-avatar", currentProfile)} aria-hidden="true">
@@ -329,7 +356,7 @@ function routeTitle(route: Route, userName: string): string {
 }
 
 function greetingTitle(userName: string): string {
-  return `안녕하세요, ${userName}님! 👋`;
+  return `안녕하세요, ${userName}님!`;
 }
 
 function mobileTabLabel(path: Route, fallback: string): string {
