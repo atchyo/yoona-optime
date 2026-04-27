@@ -101,7 +101,7 @@ export function AppShell({
     .map((path) => visibleItems.find((item) => item.path === path))
     .filter(Boolean) as typeof visibleItems;
   return (
-    <div className={route === "/" ? "app-shell dashboard-v2-shell" : "app-shell"}>
+    <div className="app-shell dashboard-v2-shell">
       <aside className="sidebar">
         <div className="brand-block">
           <img

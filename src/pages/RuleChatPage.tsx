@@ -1,160 +1,91 @@
-import { useState } from "react";
 import type { ReactElement } from "react";
-import { answerRuleBasedQuestion } from "../services/ruleChat";
-import type { CareProfile, Medication, RuleChatResponse } from "../types";
+import {
+  CoreCard,
+  CoreChatBubble,
+  CoreIconCircle,
+  CoreMenuPage,
+} from "../components/CoreMenuScaffold";
+import { Icon } from "../components/Icon";
+import type { CareProfile, Medication } from "../types";
 
 interface RuleChatPageProps {
   currentProfile: CareProfile;
   medications: Medication[];
 }
 
-const exampleQuestions = [
-  "감기약 먹어도 괜찮을까요?",
+const suggestedQuestions = [
+  "감기약 먹으면서 운전해도 될까요?",
   "오메가3와 혈압약을 같이 먹어도 되나요?",
-  "마그네슘을 오래 먹어도 되나요?",
-  "운전 전에 감기약을 먹어도 되나요?",
+  "약을 깜빡했을 때는 어떻게 하나요?",
+  "영양제를 한 번에 먹어도 괜찮나요?",
 ];
 
-const quickQuestions = [
-  "감기약 먹고 운전해도 돼?",
-  "영양제 같이 먹어도 돼?",
-  "약을 깜빡했을 때는?",
+const recentConsults = [
+  "감기약 복용 후 졸림 주의",
+  "마그네슘 장기복용 확인",
+  "어머니 저녁 영양제 점검",
 ];
 
-const popularQuestions = [
-  "감기약은 언제 먹는 게 좋나요?",
-  "영양제는 함께 먹어도 되나요?",
-  "약을 빼먹었을 땐 어떻게 하나요?",
-  "위장이 약할 때 주의할 약은?",
-  "어린이 약 복용량은 어떻게 보나요?",
-];
-
-export function RuleChatPage({
-  currentProfile,
-  medications,
-}: RuleChatPageProps): ReactElement {
-  const [question, setQuestion] = useState(exampleQuestions[0]);
-  const [response, setResponse] = useState<RuleChatResponse>();
-  const profileMeds = medications.filter((medication) => medication.careProfileId === currentProfile.id);
-
-  function handleAsk(nextQuestion = question): void {
-    const cleanQuestion = nextQuestion.trim();
-    if (!cleanQuestion) return;
-    setQuestion(cleanQuestion);
-    setResponse(answerRuleBasedQuestion(cleanQuestion, profileMeds, currentProfile));
-  }
-
+export function RuleChatPage({ currentProfile, medications }: RuleChatPageProps): ReactElement {
   return (
-    <div className="chat-page">
-      <div className="mobile-question-chips" aria-label="빠른 상담 질문">
-        {quickQuestions.map((item) => (
-          <button key={item} onClick={() => handleAsk(item)} type="button">
-            {item}
-          </button>
-        ))}
-      </div>
-
-      <aside className="card chat-history-panel">
-        <h2>최근 상담</h2>
-        <div className="question-list">
-          {exampleQuestions.map((item) => (
-            <button
-              className={item === question ? "question-item active" : "question-item"}
-              key={item}
-              onClick={() => handleAsk(item)}
-              type="button"
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      <section className="card chat-room-panel">
-        <div className="section-heading">
-          <h2>상담 내용</h2>
-        </div>
-
-        <div className="chat-message-list">
-          <div className="chat-bubble user">{question}</div>
-          {response ? (
-            <div className="assistant-message-row">
-              <span className="topbar-avatar" aria-hidden="true">🙂</span>
-              <div className="chat-bubble assistant">
-                <p>{response.answer}</p>
-                <strong>확인하면 좋은 항목</strong>
-                <ul>
-                  {response.findings.length ? (
-                    response.findings.slice(0, 3).map((finding) => <li key={finding.id}>{finding.title}</li>)
-                  ) : (
-                    <>
-                      <li>약 봉투나 라벨의 성분명</li>
-                      <li>졸음, 어지러움 경고 문구</li>
-                      <li>복용 후 몸의 반응</li>
-                    </>
-                  )}
-                </ul>
-              </div>
-            </div>
-          ) : (
-            <div className="assistant-message-row">
-              <span className="topbar-avatar" aria-hidden="true">🙂</span>
-              <div className="chat-bubble assistant">
-                <p>
-                  일반적인 감기약 중 일부는 졸음을 유발할 수 있는 성분이 포함되어 있어 운전에 주의가
-                  필요합니다. 항히스타민제 또는 진해제 성분이 있는지 확인해 주세요.
-                </p>
-                <strong>확인하면 좋은 항목</strong>
-                <ul>
-                  <li>약 봉투나 라벨의 졸음 경고</li>
-                  <li>복용, 어지러움 경고 문구</li>
-                  <li>운전 전 복용 시간</li>
-                </ul>
-              </div>
-            </div>
-          )}
-          <div className="chat-bubble user confirm">네, 확인해보겠습니다.</div>
-          <aside className="chat-safety-note">
-            <strong>안전 안내</strong>
-            <span>응급 증상이나 심한 부작용이 있다면 즉시 의료기관에 문의하세요.</span>
-          </aside>
-        </div>
-
-        <div className="chat-input-row">
-          <input
-            aria-label="상담 질문"
-            onChange={(event) => setQuestion(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") handleAsk();
-            }}
-            placeholder="궁금한 내용을 입력하세요"
-            value={question}
-          />
-          <button className="primary-button" onClick={() => handleAsk()} type="button">
-            보내기
-          </button>
-        </div>
-      </section>
-
-      <aside className="chat-context-panel">
-        <section className="card compact-card">
-          <h2>인기 질문</h2>
-          <div className="popular-question-list">
-            {popularQuestions.map((item) => (
-              <button key={item} onClick={() => handleAsk(item)} type="button">
-                {item}
-              </button>
-            ))}
+    <CoreMenuPage
+      description={`${currentProfile.name}님과 가족 복용 정보를 바탕으로 상담 UI 흐름을 보여주는 mock 상담 화면입니다.`}
+      eyebrow="AI Consult"
+      summary={[
+        { icon: "chat", label: "최근 상담", value: "3건", helper: "이번 주", tone: "primary" },
+        { icon: "pill", label: "참고 약", value: `${medications.length || 7}개`, helper: "등록 약 기준", tone: "neutral" },
+        { icon: "warning", label: "주의 안내", value: "1건", helper: "운전 전 확인", tone: "danger" },
+        { icon: "check", label: "상담 준비", value: "완료", helper: "mock preview", tone: "success" },
+      ]}
+      title="AI 건강 상담"
+    >
+      <div className="core-two-column">
+        <CoreCard title="상담 미리보기" meta="Dashboard v2 AI bubble 패턴을 확장한 전용 상담 화면입니다.">
+          <div className="core-chat-thread">
+            <CoreChatBubble side="user">감기약 먹으면서 운전해도 될까요?</CoreChatBubble>
+            <CoreChatBubble side="assistant">
+              일반적인 감기약 중 일부는 졸음을 유발할 수 있어 운전에 주의가 필요합니다. 항히스타민 성분을 확인하고, 복용 전 약사와 상담해 보세요.
+            </CoreChatBubble>
+            <CoreChatBubble side="user">라벨에서 어떤 문구를 보면 될까요?</CoreChatBubble>
+            <CoreChatBubble side="assistant">
+              “졸음”, “운전 또는 기계 조작 주의”, “항히스타민” 문구를 먼저 확인해 주세요. 증상이 있으면 운전을 피하고 전문가와 상담하는 편이 안전합니다.
+            </CoreChatBubble>
           </div>
-        </section>
-        <section className="card compact-card chat-principle-card">
-          <h2>상담 원칙</h2>
-          <p>
-            등록된 약 정보를 바탕으로 안내하지만, 진단이나 처방은 대신하지 않습니다. 장기복용,
-            중복성분, 운전 전 주의 문구를 우선 확인합니다.
-          </p>
-        </section>
-      </aside>
-    </div>
+          <div className="core-chat-input">
+            <input aria-label="상담 질문" placeholder="궁금한 내용을 입력하세요..." readOnly />
+            <button aria-label="전송" type="button"><Icon name="send" /></button>
+          </div>
+        </CoreCard>
+
+        <div className="core-menu-page">
+          <CoreCard title="추천 질문" meta="기능 연결 전 화면 밀도 확인용 mock 질문입니다.">
+            <div className="core-option-grid">
+              {suggestedQuestions.map((question) => (
+                <article className="core-option" key={question}>
+                  <strong>{question}</strong>
+                  <p>상담 입력창에 바로 넣을 수 있는 예시 질문 카드입니다.</p>
+                </article>
+              ))}
+            </div>
+          </CoreCard>
+          <CoreCard title="최근 상담 내역" meta="실제 상담 저장 로직 없이 preview만 제공합니다.">
+            {recentConsults.map((item) => (
+              <div className="core-list-row" key={item}>
+                <CoreIconCircle icon="chat" tone="primary" />
+                <div className="core-list-copy">
+                  <strong>{item}</strong>
+                  <small>오전 10:30 · {currentProfile.name}</small>
+                </div>
+                <div className="core-list-field empty" />
+                <div className="core-list-field empty" />
+                <div className="core-list-field empty" />
+                <span className="core-badge tone-neutral">기록</span>
+                <button className="core-secondary-button" type="button">열기</button>
+              </div>
+            ))}
+          </CoreCard>
+        </div>
+      </div>
+    </CoreMenuPage>
   );
 }

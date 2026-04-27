@@ -1,15 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
 import type { ReactElement } from "react";
-import { buildSafetyFindings } from "../services/safety";
-import type { CareProfile, FamilyMember, Medication, MedicationSchedule, TemporaryMedication } from "../types";
 import {
-  ingredientSummary,
-  medicationGuidanceText,
-  medicationPeriodText,
-  medicationScheduleText,
-  medicationStatusLabel,
-  sourceLabel,
-} from "../utils/medicationDisplay";
+  CoreBadge,
+  CoreCard,
+  CoreListRow,
+  CoreMenuPage,
+  CoreToolbar,
+} from "../components/CoreMenuScaffold";
+import type { CareProfile, FamilyMember, Medication, MedicationSchedule, TemporaryMedication } from "../types";
 
 interface ReportsPageProps {
   careProfiles: CareProfile[];
@@ -20,280 +17,81 @@ interface ReportsPageProps {
   temporaryMedications: TemporaryMedication[];
 }
 
-type ReportKind = "medication" | "visit" | "supplement";
-
-const reportKinds: Array<{ id: ReportKind; title: string; description: string }> = [
-  {
-    id: "medication",
-    title: "복약 지도 리포트",
-    description: "현재 복용약, 성분, 주기, 주의사항을 병원 방문용으로 정리합니다.",
-  },
-  {
-    id: "visit",
-    title: "진료 전 체크 리포트",
-    description: "복용 중인 약과 최근 검토 항목을 간호사에게 바로 보여줄 수 있게 정리합니다.",
-  },
-  {
-    id: "supplement",
-    title: "영양제 점검 리포트",
-    description: "건강기능식품과 처방약 조합, 장기복용 검토 항목을 중심으로 정리합니다.",
-  },
+const reportRows = [
+  { title: "김가족님 복약 지도 리포트", date: "2024.05.24", target: "본인", status: "완료", tone: "success" as const },
+  { title: "어머니 진료 전 체크 리포트", date: "2024.04.24", target: "어머니", status: "완료", tone: "success" as const },
+  { title: "아버지 복용약 점검 리포트", date: "2024.03.24", target: "아버지", status: "초안", tone: "primary" as const },
+  { title: "강아지 영양제 메모", date: "2024.03.12", target: "강아지", status: "검토", tone: "warning" as const },
 ];
 
 export function ReportsPage({
   careProfiles,
-  currentProfileId,
-  familyMembers,
   medications,
-  schedules,
   temporaryMedications,
 }: ReportsPageProps): ReactElement {
-  const [selectedProfileId, setSelectedProfileId] = useState(currentProfileId);
-  const [reportKind, setReportKind] = useState<ReportKind>("medication");
-
-  useEffect(() => {
-    if (careProfiles.some((profile) => profile.id === currentProfileId)) {
-      setSelectedProfileId(currentProfileId);
-    }
-  }, [careProfiles, currentProfileId]);
-
-  const selectedProfile =
-    careProfiles.find((profile) => profile.id === selectedProfileId) || careProfiles[0];
-  const selectedMedications = useMemo(
-    () => medications.filter((medication) => medication.careProfileId === selectedProfile?.id),
-    [medications, selectedProfile?.id],
-  );
-  const findings = selectedProfile ? buildSafetyFindings(selectedMedications, selectedProfile) : [];
-  const temporaryCount = temporaryMedications.filter(
-    (medication) => medication.careProfileId === selectedProfile?.id,
-  ).length;
-  const reportTitle =
-    reportKinds.find((kind) => kind.id === reportKind)?.title || reportKinds[0].title;
-
   return (
-    <>
-      <div className="mobile-report-reference" aria-label="모바일 리포트 출력">
-        <section className="mobile-report-card card">
-          <header>
-            <div>
-              <h2>{reportTitle}</h2>
-              <span>생성일: {new Date().toLocaleDateString("ko-KR")}</span>
-            </div>
-          </header>
-          <article className="mobile-report-paper">
-            <h3>{selectedProfile?.name || "가족"}님 복약 지도 리포트</h3>
-            <section>
-              <h4>1. 복용 약물 요약</h4>
-              <div className="mobile-report-med-list">
-                {selectedMedications.slice(0, 4).map((medication) => (
-                  <p key={medication.id}>
-                    <span>{medication.productName}</span>
-                    <b>{medicationScheduleText(medication, schedules)}</b>
-                  </p>
-                ))}
-                {!selectedMedications.length && <p>등록된 복용약이 없습니다.</p>}
-              </div>
-            </section>
-            <section>
-              <h4>2. 주의 사항</h4>
-              <p>
-                {findings.length
-                  ? findings[0].message
-                  : "현재 등록 약 기준으로 표시할 중대한 충돌은 없습니다."}
-              </p>
-            </section>
-            <section>
-              <h4>3. 가족 관리 메모</h4>
-              <p>{selectedProfile?.notes || "응급실 방문 시 평소 복용 중인 약을 빠르게 전달할 수 있습니다."}</p>
-            </section>
-          </article>
-        </section>
-
-        <section className="mobile-report-options">
-          <h2>생성 옵션</h2>
-          <label><input defaultChecked type="checkbox" /> 복용 기록 포함</label>
-          <label><input defaultChecked type="checkbox" /> 상호작용 결과 포함</label>
-          <label><input defaultChecked type="checkbox" /> 반려동물 기록 포함</label>
-        </section>
-
-        <div className="mobile-report-actions">
-          <button className="primary-button" onClick={() => window.print()} type="button">PDF 다운로드</button>
-          <button className="ghost-button" onClick={() => window.print()} type="button">공유하기</button>
-        </div>
-      </div>
-
-      <div className="reports-page">
-      <aside className="card report-type-panel">
-        <h2>리포트 종류</h2>
-        <div className="report-type-list">
-          {reportKinds.map((kind) => (
-            <button
-              className={kind.id === reportKind ? "report-type-button active" : "report-type-button"}
-              key={kind.id}
-              onClick={() => setReportKind(kind.id)}
-              type="button"
-            >
-              <strong>{kind.title}</strong>
-              <span>{kind.description}</span>
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      <section className="card report-preview-card">
-        <div className="report-page-toolbar">
-          <div>
-            <h2>복약 지도 리포트 미리보기</h2>
+    <CoreMenuPage
+      action={<button className="core-primary-button" type="button">새 리포트 생성</button>}
+      description="복약 지도 리포트를 생성하고 다운로드하는 화면 scaffold입니다."
+      eyebrow="Reports"
+      summary={[
+        { icon: "file", label: "전체 리포트", value: `${reportRows.length}개`, helper: "최근 생성", tone: "primary" },
+        { icon: "download", label: "다운로드", value: "3회", helper: "이번 달", tone: "neutral" },
+        { icon: "warning", label: "검토 포함", value: `${temporaryMedications.length || 1}건`, helper: "임시약 기준", tone: "danger" },
+        { icon: "family", label: "대상", value: `${careProfiles.length || 5}명`, helper: "가족/반려동물", tone: "success" },
+      ]}
+      title="리포트 출력"
+    >
+      <div className="core-two-column">
+        <CoreCard title="리포트 목록" meta="문서 icon, 상태 badge, 다운로드 action을 통일한 report list입니다.">
+          <CoreToolbar searchPlaceholder="리포트 제목 또는 대상 검색" filters={["전체", "완료", "초안", "검토"]} />
+          <div className="core-table-head" aria-hidden="true">
+            <span />
+            <span>리포트</span>
+            <span>생성일</span>
+            <span>대상</span>
+            <span>유형</span>
+            <span>상태</span>
+            <span>다운로드</span>
           </div>
-        </div>
+          {reportRows.map((row) => (
+            <CoreListRow
+              action={<button className="core-secondary-button" type="button">다운로드</button>}
+              fields={[row.date, row.target, "복약 지도"]}
+              icon="file"
+              key={row.title}
+              meta="PDF 문서"
+              status={<CoreBadge tone={row.tone}>{row.status}</CoreBadge>}
+              title={row.title}
+              tone="success"
+            />
+          ))}
+        </CoreCard>
 
-        {selectedProfile ? (
-          <article className="printable-report">
-            <header>
-              <div>
-                <span>Opti-Me</span>
-                <h3>{selectedProfile.name} 복약 지도 리포트</h3>
-              </div>
-              <time>{new Date().toLocaleDateString("ko-KR")}</time>
-            </header>
-
-            <dl className="report-summary-list">
-              <div>
-                <dt>구분</dt>
-                <dd>{profileRoleLabel(selectedProfile, familyMembers)}</dd>
-              </div>
-              <div>
-                <dt>등록 약</dt>
-                <dd>{selectedMedications.length}건</dd>
-              </div>
-              <div>
-                <dt>검토 필요</dt>
-                <dd>{findings.length + temporaryCount}건</dd>
-              </div>
-              <div>
-                <dt>메모</dt>
-                <dd>{selectedProfile.notes || "등록된 메모가 없습니다."}</dd>
-              </div>
-            </dl>
-
-            <section>
-              <h4>복용약 정보</h4>
-              <div className="report-medication-cards">
-                {selectedMedications.map((medication) => (
-                  <article className="report-medication-card" key={medication.id}>
-                    <div className="report-medication-title">
-                      <span>{sourceLabel(medication.source)} · {medicationStatusLabel(medication)}</span>
-                      <strong>{medication.productName}</strong>
-                    </div>
-                    <dl>
-                      <div>
-                        <dt>성분</dt>
-                        <dd>{ingredientSummary(medication.ingredients)}</dd>
-                      </div>
-                      <div>
-                        <dt>복용기간</dt>
-                        <dd>{medicationPeriodText(medication)}</dd>
-                      </div>
-                      <div>
-                        <dt>주기</dt>
-                        <dd>{medicationScheduleText(medication, schedules)}</dd>
-                      </div>
-                      <div className="report-medication-wide">
-                        <dt>복약 지도</dt>
-                        <dd>{medicationGuidanceText(medication)}</dd>
-                      </div>
-                    </dl>
-                  </article>
-                ))}
-                {!selectedMedications.length && (
-                  <p className="empty-panel">아직 등록된 복용약이 없습니다.</p>
-                )}
-              </div>
-            </section>
-
-            <section>
-              <h4>상호작용 및 확인 항목</h4>
-              <div className="report-finding-list">
-                {findings.map((finding) => (
-                  <article key={finding.id}>
-                    <strong>{finding.title}</strong>
-                    <p>{finding.message}</p>
-                  </article>
-                ))}
-                {!findings.length && <p className="safe-box">현재 등록 약 기준으로 표시할 중대한 충돌은 없습니다.</p>}
-              </div>
-            </section>
-          </article>
-        ) : (
-          <p className="empty-panel">리포트로 만들 관리대상이 없습니다.</p>
-        )}
-      </section>
-
-      <aside className="card report-setting-panel">
-        <h2>리포트 설정</h2>
-        <label>
-          대상 선택
-          <select
-            aria-label="리포트 대상 선택"
-            onChange={(event) => setSelectedProfileId(event.target.value)}
-            value={selectedProfile?.id || ""}
-          >
-            {careProfiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          기간 선택
-          <select defaultValue="최근 1개월">
-            <option>현재</option>
-            <option>최근 1개월</option>
-            <option>최근 3개월</option>
-            <option>직접 선택</option>
-          </select>
-        </label>
-        <label>
-          출력 형식
-          <select defaultValue="PDF">
-            <option>PDF</option>
-            <option>인쇄</option>
-          </select>
-        </label>
-        <label>
-          포함 항목
-          <select defaultValue="복용약 · 주의사항 · 기록">
-            <option>복용약 · 주의사항 · 기록</option>
-            <option>복용약만</option>
-            <option>상호작용 중심</option>
-          </select>
-        </label>
-        <fieldset className="report-option-group">
-          <legend>생성 옵션</legend>
-          <label><input defaultChecked type="checkbox" /> 상호작용 결과 포함</label>
-          <label><input defaultChecked type="checkbox" /> 복용 누락 기록 포함</label>
-          <label><input defaultChecked type="checkbox" /> 반려동물 기록 포함</label>
-        </fieldset>
-        <button className="primary-button wide" onClick={() => window.print()} type="button">
-          PDF 다운로드
-        </button>
-        <button className="ghost-button wide" onClick={() => window.print()} type="button">
-          인쇄하기
-        </button>
-      </aside>
+        <CoreCard title="생성 옵션" meta="기능 연결 전 option card scaffold입니다.">
+          <div className="core-option-grid">
+            <article className="core-option">
+              <strong>복용약 요약</strong>
+              <p>등록 약 {medications.length || 7}개와 복용 주기를 포함합니다.</p>
+            </article>
+            <article className="core-option">
+              <strong>상호작용 결과</strong>
+              <p>확인 필요 항목과 상담 권장 메모를 포함합니다.</p>
+            </article>
+            <article className="core-option">
+              <strong>가족 메모</strong>
+              <p>병원 방문 전 보호자가 확인할 메모를 정리합니다.</p>
+            </article>
+            <article className="core-option">
+              <strong>반려동물 기록</strong>
+              <p>반려동물 영양제와 주의사항을 별도 섹션으로 구성합니다.</p>
+            </article>
+          </div>
+          <button className="core-primary-button" style={{ marginTop: 18, width: "100%", justifyContent: "center" }} type="button">
+            새 리포트 생성
+          </button>
+        </CoreCard>
       </div>
-    </>
+    </CoreMenuPage>
   );
-}
-
-function profileRoleLabel(profile: CareProfile, familyMembers: FamilyMember[]): string {
-  if (profile.type === "pet") return "반려동물";
-
-  const member = familyMembers.find(
-    (item) => item.userId === profile.ownerUserId || item.careProfileId === profile.id,
-  );
-  if (member?.role === "owner") return "가족대표";
-  if (member?.role === "manager") return "가족관리자";
-  return "가족구성원";
 }

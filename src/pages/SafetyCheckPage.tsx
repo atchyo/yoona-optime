@@ -1,7 +1,13 @@
-import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
-import { buildSafetyFindings } from "../services/safety";
-import type { CareProfile, Medication, SafetyFinding } from "../types";
+import {
+  CoreBadge,
+  CoreCard,
+  CoreChip,
+  CoreListRow,
+  CoreMenuPage,
+  CoreToolbar,
+} from "../components/CoreMenuScaffold";
+import type { CareProfile, Medication } from "../types";
 
 interface SafetyCheckPageProps {
   careProfiles: CareProfile[];
@@ -9,166 +15,99 @@ interface SafetyCheckPageProps {
   medications: Medication[];
 }
 
+const selectedChips = ["고혈압약", "감기약", "오메가3"];
+const safetyRows = [
+  {
+    title: "고혈압약 + 감기약",
+    level: "확인 필요",
+    tone: "danger" as const,
+    message: "일부 감기약 성분은 혈압 관리에 영향을 줄 수 있어 약사 상담을 권장합니다.",
+    target: "본인",
+    action: "자세히",
+  },
+  {
+    title: "오메가3 + 종합비타민",
+    level: "주의",
+    tone: "warning" as const,
+    message: "성분 중복 가능성을 확인하고 제품 라벨을 비교해 주세요.",
+    target: "본인",
+    action: "확인",
+  },
+  {
+    title: "비타민D + 마그네슘",
+    level: "참고",
+    tone: "success" as const,
+    message: "현재 예시 기준에서는 중대한 충돌로 표시되지 않습니다.",
+    target: "가족",
+    action: "보기",
+  },
+];
+
 export function SafetyCheckPage({
-  careProfiles,
   currentProfile,
   medications,
 }: SafetyCheckPageProps): ReactElement {
-  const [selectedProfileId, setSelectedProfileId] = useState(currentProfile.id);
-
-  useEffect(() => {
-    if (careProfiles.some((profile) => profile.id === currentProfile.id)) {
-      setSelectedProfileId(currentProfile.id);
-    }
-  }, [careProfiles, currentProfile.id]);
-
-  const selectedProfile =
-    careProfiles.find((profile) => profile.id === selectedProfileId) || careProfiles[0] || currentProfile;
-  const selectedMedications = medications.filter(
-    (medication) => medication.careProfileId === selectedProfile.id,
-  );
-  const selectedFindings = buildSafetyFindings(selectedMedications, selectedProfile);
-
   return (
-    <div className="safety-page">
-      <section className="card safety-workspace">
-        <div className="segmented-tabs safety-tabs" aria-label="상호작용 확인 범위">
-          <button className="active" type="button">내 약 조합</button>
-          <button type="button">영양제 조합 확인</button>
+    <CoreMenuPage
+      action={<button className="core-primary-button" type="button">검사 실행</button>}
+      description={`${currentProfile.name}님에게 등록된 약 조합을 바탕으로 확인 필요 항목을 보여주는 mock 결과 화면입니다.`}
+      eyebrow="Interaction Check"
+      summary={[
+        { icon: "warning", label: "확인 필요", value: "1건", helper: "상담 권장", tone: "danger" },
+        { icon: "shield", label: "주의", value: "1건", helper: "성분 확인", tone: "warning" },
+        { icon: "check", label: "안전", value: "3건", helper: "중대한 충돌 없음", tone: "success" },
+        { icon: "pill", label: "검사 대상", value: `${medications.length || 7}개`, helper: "등록 약 기준", tone: "neutral" },
+      ]}
+      title="상호작용 체크"
+    >
+      <CoreCard title="약 조합 선택" meta="실제 의학 판단 로직 없이 Dashboard v2 warning/card 패턴만 적용했습니다.">
+        <CoreToolbar searchPlaceholder="약 이름 또는 성분을 검색해 추가" filters={["전체", "처방약", "영양제", "감기약"]} />
+        <div className="core-chip-list">
+          {selectedChips.map((chip) => <CoreChip key={chip}>{chip}</CoreChip>)}
         </div>
+      </CoreCard>
 
-        <div className="safe-box safety-ok-banner">
-          <strong>현재 등록된 약에서 중대한 상호작용은 없습니다.</strong>
-          <span>단, 아래 조합은 상황에 따라 주의가 필요합니다.</span>
-        </div>
-
-        <div className="safety-current-grid">
-          <aside className="safety-profile-list" aria-label="관리 대상 선택">
-            {careProfiles.map((profile) => (
-              <button
-                className={profile.id === selectedProfile.id ? "safety-profile active" : "safety-profile"}
-                key={profile.id}
-                onClick={() => setSelectedProfileId(profile.id)}
-                type="button"
-              >
-                <strong>{profile.name}</strong>
-                <span>{profile.type === "pet" ? "반려동물" : `${profile.ageGroup}대`}</span>
-              </button>
-            ))}
-          </aside>
-
-          <div className="safety-result-panel">
-            <div className="section-heading row-heading">
-              <div>
-                <h2>확인된 상호작용 ({selectedFindings.length})</h2>
-                <p className="muted">{selectedProfile.name}님에게 등록된 약과 영양제 기준입니다.</p>
-              </div>
-              <span className="owner-badge">등록 약 {selectedMedications.length}건</span>
-            </div>
-            <MedicationIngredientList medications={selectedMedications} />
-            <SafetyFindingList findings={selectedFindings} medications={selectedMedications} />
+      <div className="core-two-column">
+        <CoreCard title="검사 결과" meta="주의 문구는 단정 대신 확인 필요와 상담 권장 톤을 사용합니다.">
+          <div className="core-table-head" aria-hidden="true">
+            <span />
+            <span>조합</span>
+            <span>대상</span>
+            <span>설명</span>
+            <span>분류</span>
+            <span>상태</span>
+            <span>관리</span>
           </div>
-        </div>
-
-        <div className="additional-check-panel">
-          <h3>추가 조합 검색</h3>
-          <div>
-            <input placeholder="약 이름 또는 성분 입력" />
-            <button className="primary-button" type="button">조합 확인</button>
+          {safetyRows.map((row) => (
+            <CoreListRow
+              action={<button className={row.tone === "danger" ? "core-danger-button" : "core-secondary-button"} type="button">{row.action}</button>}
+              fields={[row.target, row.message, row.level]}
+              icon={row.tone === "danger" ? "warning" : "shield"}
+              key={row.title}
+              meta="상담 전 확인 자료"
+              status={<CoreBadge tone={row.tone}>{row.level}</CoreBadge>}
+              title={row.title}
+              tone={row.tone}
+            />
+          ))}
+        </CoreCard>
+        <CoreCard title="안내" meta="상호작용 체크 화면의 보조 패널입니다.">
+          <div className="core-warning-card">
+            <strong>의료 판단을 대신하지 않습니다</strong>
+            <p>표시된 결과는 상담 준비를 돕는 일반 정보입니다. 복용 변경이나 중단은 의료진 또는 약사와 상담해 주세요.</p>
           </div>
-        </div>
-      </section>
-
-      <aside className="card safety-guide-panel">
-        <h2>상호작용 등급 안내</h2>
-        <div className="safety-guide-grid">
-          <GuideCard title="주의" text="함께 복용 시 확인이 필요한 경우" />
-          <GuideCard title="관찰" text="증상 변화가 있으면 중단/상담" />
-          <GuideCard title="중복" text="성분이 겹칠 가능성" />
-          <GuideCard title="참고" text="복용 시간 조정 권장" />
-        </div>
-        <div className="empty-panel current-guide">
-          <strong>현재 안내</strong>
-          <p>본 서비스는 등록한 약과 영양제를 기준으로 일반적인 주의 정보를 제공합니다. 처방 변경이나 중단은 반드시 의료진과 상담하세요.</p>
-        </div>
-      </aside>
-
-      <section className="mobile-safety-med-list">
-        <h2>함께 복용 중인 약</h2>
-        <MedicationIngredientList medications={selectedMedications} />
-      </section>
-      <section className="mobile-safety-finding-list">
-        <SafetyFindingList findings={selectedFindings} medications={selectedMedications} />
-      </section>
-      <button className="primary-button mobile-report-link" type="button">복약 지도 리포트 보기</button>
-    </div>
-  );
-}
-
-function MedicationIngredientList({ medications }: { medications: Medication[] }): ReactElement {
-  if (!medications.length) {
-    return <p className="empty-panel">등록된 약이 없어 성분을 비교할 수 없습니다.</p>;
-  }
-
-  return (
-    <div className="ingredient-strip">
-      {medications.map((medication) => (
-        <article key={medication.id}>
-          <div>
-            <strong>{medication.productName}</strong>
-            <span>{medication.ingredients.map(formatIngredient).join(", ") || "성분 미등록"}</span>
+          <div className="core-option-grid" style={{ marginTop: 14 }}>
+            <article className="core-option">
+              <strong>약사 상담 CTA</strong>
+              <p>주의 조합이 있을 때 상담으로 이어지는 위치입니다.</p>
+            </article>
+            <article className="core-option">
+              <strong>검사 기록</strong>
+              <p>최근 확인한 조합과 결과 요약을 보여줍니다.</p>
+            </article>
           </div>
-          <button aria-label={`${medication.productName} 조합에서 제외`} type="button">⊖</button>
-        </article>
-      ))}
-    </div>
+        </CoreCard>
+      </div>
+    </CoreMenuPage>
   );
-}
-
-function SafetyFindingList({
-  compact,
-  findings,
-  medications,
-}: {
-  compact?: boolean;
-  findings: SafetyFinding[];
-  medications: Medication[];
-}): ReactElement {
-  if (!findings.length) {
-    return <p className="safe-box">현재 등록 약 기준으로 표시할 중대한 충돌은 없습니다.</p>;
-  }
-
-  return (
-    <div className={compact ? "finding-stack compact" : "finding-stack"}>
-      {findings.map((finding) => (
-        <article className={finding.level === "고위험" ? "danger-box" : "warning-box"} key={finding.id}>
-          <div>
-            <strong>{finding.title}</strong>
-            <span>{finding.level}</span>
-          </div>
-          <p>{finding.message}</p>
-          <small>
-            관련 약:{" "}
-            {finding.medicationIds
-              .map((id) => medications.find((medication) => medication.id === id)?.productName)
-              .filter(Boolean)
-              .join(", ") || "확인 필요"}
-          </small>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function GuideCard({ title, text }: { title: string; text: string }): ReactElement {
-  return (
-    <article className="guide-card">
-      <strong>{title}</strong>
-      <p>{text}</p>
-    </article>
-  );
-}
-
-function formatIngredient(ingredient: Medication["ingredients"][number]): string {
-  return ingredient.amount ? `${ingredient.name} ${ingredient.amount}` : ingredient.name;
 }

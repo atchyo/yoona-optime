@@ -170,6 +170,17 @@ Dashboard v2 is the UI baseline for Opti-Me. New product surfaces should inherit
 
 ## Reusable Component Inventory
 
+- `CoreMenuPage`
+- `CoreSummaryGrid`
+- `CoreCard`
+- `CoreToolbar`
+- `CoreListRow`
+- `CoreBadge`
+- `CoreIconCircle`
+- `CoreAvatar`
+- `CoreEmptyState`
+- `CoreChatBubble`
+- `CoreToggle`
 - `SectionCard`
 - `CardHeader`
 - `SummaryCard`
@@ -189,5 +200,7 @@ Dashboard v2 is the UI baseline for Opti-Me. New product surfaces should inherit
 
 - Keep Dashboard v2 CSS in `src/dashboard-v2.css` until the rest of the app is migrated.
 - New screens should reuse the Dashboard v2 shell, card, typography, badge, button, and icon rules before introducing new variants.
+- Core menu scaffold screens use `src/components/CoreMenuScaffold.tsx` and the `.core-*` CSS pattern names as the first pass for non-dashboard desktop light surfaces.
+- Core menu scaffold is an 80% layout baseline, not final per-screen polish. Screen-specific refinements should happen in later focused passes.
 - Mock/fixture data in Dashboard v2 is render-only and must not write to DB.
 - Future real data wiring should preserve the visual contract first, then replace fixture values carefully.
