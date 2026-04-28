@@ -4,10 +4,10 @@
 
 Dashboard v2 is the UI baseline for Opti-Me. New product surfaces should inherit this system unless a later design-system pass explicitly replaces it.
 
-- Primary target: desktop light.
+- Primary target: desktop light across `1440x900`, `1512x982`, and `1920x1080` CSS viewports.
 - Design direction: soft premium healthcare dashboard.
 - Superseded criteria from earlier dashboard experiments are not part of this baseline.
-- Deferred: dark mode polish, mobile polish, and narrow desktop/tablet responsive compression.
+- Deferred: dark mode polish, mobile polish, and sub-1024px mobile-specific layout.
 - Prohibited: global body font-size scaling, `zoom`, `transform: scale(...)`, broad visual rewrites outside the active screen.
 
 ## Color Tokens
@@ -44,29 +44,44 @@ Dashboard v2 is the UI baseline for Opti-Me. New product surfaces should inherit
 
 ## Typography
 
-- Page greeting: 30px, 720-750, `#334155`.
-- Greeting subtitle: 17px, `text secondary`.
-- Sidebar logo title: 30px, 720-750.
-- Sidebar logo subtitle: 16px, 600-630, `text soft`.
-- Sidebar menu label: 21px, 640-670, line-height 1.35-1.42.
-- Section title: 23px, 680-710, `text primary`.
-- Card body title: 17-18px, 640-690, `text strongest`.
-- Body copy: 16-17px, `text secondary`.
-- Meta copy: 15.5-16px, `text muted`.
-- Summary title: 17px, 700, `text secondary`.
-- Summary number: 34px, 720-750, slate for normal cards and muted danger for danger cards.
-- CTA text: 16px, 760, primary or muted danger.
+- Page greeting: 28px on standard desktop, 30px on wide desktop, 720-750, `#334155`.
+- Greeting subtitle: 16px on standard desktop, 17px on wide desktop, `text secondary`.
+- Sidebar logo title: 24px on standard desktop, 30px on wide desktop, 720-750.
+- Sidebar logo subtitle: 14.5-16px, 600-630, `text soft`.
+- Sidebar menu label: 17px on standard desktop, 21px on wide desktop, 640-670, line-height 1.35-1.42.
+- Section title: 21px on standard desktop, 23px on wide desktop, 680-710, `text primary`.
+- Card body title: 15.5-18px, 640-690, `text strongest`.
+- Body copy: 15.5-17px, `text secondary`.
+- Meta copy: 14.5-16px, `text muted`.
+- Summary title: 16px on standard desktop, 17px on wide desktop, 700, `text secondary`.
+- Summary number: 32px on standard desktop, 34px on wide desktop, 720-750, slate for normal cards and muted danger for danger cards.
+- CTA text: 14-16px, 760, primary or muted danger.
 - Badge text: 13px, 760.
 - Font weight should not be increased to compensate for readability. Use size, spacing, and contrast before weight.
 
 ## Layout
 
-- Desktop light is the canonical layout.
+- Desktop light is the canonical layout, but 4K/high-DPI screenshots are not the only acceptance check.
+- Required desktop verification viewports: `1440x900`, `1512x982`, and `1920x1080`.
+- Breakpoints:
+  - Wide desktop: `1800px+`.
+  - Standard desktop: `1440px-1799px`.
+  - Compact desktop: `1280px-1439px`.
+  - Tablet-like desktop: `1024px-1279px`.
 - Wide desktop sidebar: 304-320px, current baseline 312px.
-- Main content padding: left around 34px, top around 44px, right reduced enough to keep card grids comfortable on wide desktop.
-- Summary grid: 4 columns.
+- Standard desktop sidebar: about 276px.
+- Compact desktop sidebar: about 248px with simplified grids.
+- Main content padding responds by viewport: about 28px horizontal on standard desktop and 34-36px on wide desktop.
+- Summary grid:
+  - Wide desktop (`1800px+`): 4 columns.
+  - Standard desktop (`1440px-1799px`): 2 columns x 2 rows.
+  - Compact desktop (`1280px-1439px`): 2 columns.
 - Main dashboard grid: schedule card plus right status stack.
-- Lower grid: recent records, AI consult, report cards in 3 columns.
+- Lower grid:
+  - Wide desktop (`1800px+`): recent records, AI consult, and report cards in 3 columns.
+  - Standard desktop (`1440px-1799px`): recent records and reports share the first row; AI consult spans the full second row so chat bubbles are not squeezed.
+  - Compact desktop (`1280px-1439px`): 1 column for layout stability.
+- AI consult cards must not be forced into a narrow 3-column layout when chat bubbles start to collapse.
 - Sidebar promo card aligns visually to the recent records card bottom line. Target bottom delta is 4px or less in 1920x1080 CSS viewport.
 - Tablet/mobile layouts are allowed to remain smoke-check only until their dedicated pass.
 
@@ -76,7 +91,7 @@ Dashboard v2 is the UI baseline for Opti-Me. New product surfaces should inherit
 - Sidebar background is white, with a subtle right border.
 - Active navigation uses pale indigo background with primary icon/text.
 - Nav icon style is one line-icon system from `src/components/Icon.tsx`.
-- Sidebar menu row height is 58-62px on wide desktop.
+- Sidebar menu row height is about 46px on standard desktop and 58-62px on wide desktop.
 - Sidebar menu icon size is about 20px inside a soft circular icon background.
 - Sidebar promo image uses contained image fitting and should never crop faces or important content.
 
@@ -113,11 +128,13 @@ Dashboard v2 is the UI baseline for Opti-Me. New product surfaces should inherit
 
 ## Summary Cards
 
-- Structure: icon circle / text content / CTA.
+- Structure: icon circle / text content / CTA, with CTA on its own stable lower row so it does not steal width from Korean title text.
 - Icon circle: about 42px.
 - Icon-content gap: about 16px.
 - Title-number gap: about 7px.
 - CTA sits in a stable right area and must not crowd the number.
+- Korean summary titles and values use `word-break: keep-all` and `white-space: nowrap`.
+- `복용중인 약`, `오늘 복용 예정`, `이번 주 리포트`, `7개`, `3개`, `2개`, and `1건` must not wrap at 1440px, 1512px, or 1920px desktop viewports.
 - All four summary cards should look like instances of the same component.
 - Danger summary uses danger value/CTA color only; layout remains identical.
 
@@ -202,5 +219,7 @@ Dashboard v2 is the UI baseline for Opti-Me. New product surfaces should inherit
 - New screens should reuse the Dashboard v2 shell, card, typography, badge, button, and icon rules before introducing new variants.
 - Core menu scaffold screens use `src/components/CoreMenuScaffold.tsx` and the `.core-*` CSS pattern names as the first pass for non-dashboard desktop light surfaces.
 - Core menu scaffold is an 80% layout baseline, not final per-screen polish. Screen-specific refinements should happen in later focused passes.
+- Dashboard home layout rules use `.dv2-*` selectors. Core menu scaffold rules use `.core-*` selectors. Avoid generic selectors such as `.card`, `.title`, `.button`, or `.page` for Dashboard v2 changes.
+- `.core-*` menu scaffold CSS must not change `.dv2-*` Dashboard home behavior.
 - Mock/fixture data in Dashboard v2 is render-only and must not write to DB.
 - Future real data wiring should preserve the visual contract first, then replace fixture values carefully.
