@@ -202,11 +202,25 @@ All local screenshots used light mode with a demo local user.
 
 ## Production Status
 
-Not pushed yet in this report revision. Local responsive verification and build
-passed first.
+Pushed to `origin/main` after local responsive verification and build passed.
 
-If this commit is pushed to `main`, production should be rechecked at
-`https://optime.jeongung.cloud/` with the same desktop viewport tiers.
+- Commit pushed: `9be5466`
+- Production URL checked: `https://optime.jeongung.cloud/`
+- Live assets confirmed:
+  - `/assets/index-v9M4PRI0.js`
+  - `/assets/index-BpLqe4VZ.css`
+- Production viewport probe:
+  - `window.innerWidth`: `1512`
+  - `window.innerHeight`: `982`
+  - `window.devicePixelRatio`: `2`
+  - Final URL without a signed-in session: `https://optime.jeongung.cloud/login`
+  - Login screen visible: yes
+  - Dashboard DOM visible without session: no
+
+The production deployment is serving the new responsive build assets. The home
+dashboard itself requires an authenticated production session, so unauthenticated
+automation could verify the deployed bundle and login routing but could not
+inspect the signed-in Dashboard v2 DOM on the production domain.
 
 ## Remaining Issues
 
